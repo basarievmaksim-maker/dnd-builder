@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Fast D&D Builder</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -10,810 +10,170 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Roboto:wght@300;400;500&display=swap');
         
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #0a0a0a; color: #e2e8f0; font-family: 'Roboto', sans-serif; min-height: 100vh; position: relative; overflow-x: hidden; }
+
+        .bg-image { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('images/bg/main-bg.jpg') center/cover; z-index: -2; filter: brightness(0.4); }
+        .bg-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(0,0,0,0.7) 0%, rgba(10,10,20,0.8) 100%); z-index: -1; }
+        #particles-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+
+        .fantasy-title { font-family: 'Cinzel', serif; text-shadow: 0 0 20px rgba(245, 158, 11, 0.5); }
         
-        body { 
-            background-color: #0a0a0a; 
-            color: #e2e8f0; 
-            font-family: 'Roboto', sans-serif;
-            min-height: 100vh;
-            position: relative;
-            overflow-x: hidden;
+        .card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 2px solid rgba(245, 158, 11, 0.2); background: rgba(30, 30, 40, 0.85); backdrop-filter: blur(10px); position: relative; overflow: hidden; }
+        .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, transparent 100%); opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        .card:hover { border-color: rgba(245, 158, 11, 0.6); transform: translateY(-4px); box-shadow: 0 10px 40px rgba(245, 158, 11, 0.3); }
+        .card:active { transform: translateY(-2px) scale(0.98); }
+        .card.selected { border-color: rgba(245, 158, 11, 1); background: rgba(39, 39, 42, 0.95); box-shadow: 0 0 30px rgba(245, 158, 11, 0.5), inset 0 0 20px rgba(245, 158, 11, 0.1); transform: translateY(-2px); }
+
+        .class-icon { width: 64px; height: 64px; border-radius: 8px; object-fit: cover; border: 2px solid rgba(245, 158, 11, 0.3); box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .race-icon { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(245, 158, 11, 0.3); box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .icon-placeholder, .race-icon-placeholder { display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f59e0b, #d97706); color: black; border: 2px solid rgba(245, 158, 11, 0.5); }
+        .icon-placeholder { width: 64px; height: 64px; border-radius: 8px; font-size: 28px; font-weight: bold; }
+        .race-icon-placeholder { width: 48px; height: 48px; border-radius: 50%; font-size: 20px; font-weight: bold; }
+
+        .stat-btn { background: linear-gradient(135deg, #334155, #1e293b); color: white; width: 44px; height: 44px; border-radius: 8px; font-weight: bold; font-size: 20px; border: 2px solid rgba(245, 158, 11, 0.3); transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+        .stat-btn:hover:not(:disabled) { background: linear-gradient(135deg, #f59e0b, #d97706); color: black; box-shadow: 0 0 15px rgba(245, 158, 11, 0.5); }
+        .stat-btn:active:not(:disabled) { transform: scale(0.95); }
+        .stat-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .spell-tag { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 12px; margin-right: 4px; font-weight: 600; }
+        .spell-tag.cantrip { background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; }
+        .spell-tag.level1 { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; }
+
+        .copy-toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 14px 28px; border-radius: 10px; font-weight: bold; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4); font-size: 16px; }
+        .copy-toast.show { opacity: 1; }
+
+        .points-counter { background: linear-gradient(135deg, #f59e0b, #d97706); color: black; padding: 12px 24px; border-radius: 10px; font-weight: bold; display: inline-block; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); font-size: 18px; }
+
+        .desc-box { background: rgba(30, 41, 59, 0.8); padding: 10px 14px; border-radius: 8px; margin: 6px 0; font-size: 13px; border-left: 3px solid #f59e0b; backdrop-filter: blur(5px); }
+
+        .info-button { display: inline-flex; align-items: center; gap: 6px; padding: 12px 24px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border-radius: 10px; font-weight: bold; text-decoration: none; transition: all 0.2s; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); font-size: 16px; }
+        .info-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6); }
+
+        .stat-recommended { border: 2px solid rgba(245, 158, 11, 0.8) !important; background: linear-gradient(135deg, rgba(39, 39, 42, 0.9), rgba(51, 51, 61, 0.9)) !important; box-shadow: 0 0 20px rgba(245, 158, 11, 0.3) !important; }
+        .stat-primary { border-left: 4px solid #f59e0b !important; }
+        .tip-banner { background: linear-gradient(135deg, rgba(30, 58, 95, 0.9), rgba(15, 23, 42, 0.9)); border: 1px solid rgba(59, 130, 246, 0.5); border-radius: 10px; padding: 14px; margin-bottom: 18px; backdrop-filter: blur(10px); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .tip-primary { color: #f59e0b; font-weight: bold; text-shadow: 0 0 10px rgba(245, 158, 11, 0.5); }
+        .tip-secondary { color: #60a5fa; font-weight: 600; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 4px; }
+
+        @media (max-width: 640px) {
+            body { font-size: 14px; }
+            .p-8 { padding: 16px !important; }
+            .text-5xl { font-size: 2rem !important; }
+            .text-4xl { font-size: 1.75rem !important; }
+            .text-3xl { font-size: 1.5rem !important; }
+            .grid-cols-3, .grid-cols-2 { grid-template-columns: 1fr !important; }
+            .card { padding: 16px !important; margin-bottom: 12px; }
+            .class-icon { width: 48px; height: 48px; }
+            .race-icon { width: 40px; height: 40px; }
+            .lg\:grid-cols-3, .md\:grid-cols-2, .md\:grid-cols-3, .md\:grid-cols-4 { grid-template-columns: 1fr !important; }
+            .gap-4 { gap: 12px !important; }
+            .flex.gap-4 { flex-direction: column; gap: 10px !important; }
+            .flex.gap-4 button { width: 100%; }
+            .grid-cols-4 { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+            .tip-banner { padding: 12px; font-size: 13px; }
         }
 
-        /* Фоновое изображение - ЛОКАЛЬНОЕ */
-        .bg-image {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: url('images/bg/main-bg.jpg') center/cover;
-            z-index: -2;
-            filter: brightness(0.4);
+        #character-sheet { 
+            display: none; 
+            background: white; 
+            color: #1a1a1a; 
+            padding: 20px; 
+            font-family: 'Arial', sans-serif;
+            font-size: 11px;
+            line-height: 1.4;
+            max-width: 800px;
+            margin: 0 auto;
         }
-
-        /* Затемнение фона */
-        .bg-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(0,0,0,0.7) 0%, rgba(10,10,20,0.8) 100%);
-            z-index: -1;
-        }
-
-        /* Заголовки с готическим шрифтом */
-        .fantasy-title {
-            font-family: 'Cinzel', serif;
-            text-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
-        }
-
-        /* Карточки с иконками */
-        .card { 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-            border: 2px solid rgba(245, 158, 11, 0.2);
-            background: rgba(30, 30, 40, 0.8);
-            backdrop-filter: blur(10px);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, transparent 100%);
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none;
-        }
-
-        .card:hover { 
-            border-color: rgba(245, 158, 11, 0.6); 
-            transform: translateY(-4px);
-            box-shadow: 0 10px 40px rgba(245, 158, 11, 0.3);
-        }
-
-        .card:hover::before {
-            opacity: 1;
-        }
-
-        .card.selected { 
-            border-color: rgba(245, 158, 11, 1); 
-            background: rgba(39, 39, 42, 0.95);
-            box-shadow: 0 0 30px rgba(245, 158, 11, 0.5), inset 0 0 20px rgba(245, 158, 11, 0.1);
-            transform: translateY(-2px);
-        }
-
-        /* Иконки - ЛОКАЛЬНЫЕ */
-        .class-icon {
-            width: 64px;
-            height: 64px;
-            border-radius: 8px;
-            object-fit: cover;
-            border: 2px solid rgba(245, 158, 11, 0.3);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            background: linear-gradient(135deg, #1e293b, #0f172a);
-        }
-
-        .race-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid rgba(245, 158, 11, 0.3);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            background: linear-gradient(135deg, #1e293b, #0f172a);
-        }
-
-        /* Placeholder для иконок */
-        .icon-placeholder {
-            width: 64px;
-            height: 64px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            font-weight: bold;
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            color: black;
-            border: 2px solid rgba(245, 158, 11, 0.5);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        }
-
-        .race-icon-placeholder {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            font-weight: bold;
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            color: black;
-            border: 2px solid rgba(245, 158, 11, 0.5);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        }
-
-        .stat-btn { 
-            background: linear-gradient(135deg, #334155, #1e293b); 
-            color: white; 
-            width: 32px; 
-            height: 32px; 
-            border-radius: 4px; 
-            font-weight: bold;
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            transition: all 0.2s;
-        }
-
-        .stat-btn:hover:not(:disabled) { 
-            background: linear-gradient(135deg, #f59e0b, #d97706); 
-            color: black;
-            box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
-        }
-
-        .stat-btn:disabled { 
-            opacity: 0.3; 
-            cursor: not-allowed; 
-        }
-
-        .spell-tag { 
-            display: inline-block; 
-            padding: 2px 8px; 
-            border-radius: 4px; 
-            font-size: 11px; 
-            margin-right: 4px;
-            font-weight: 600;
-        }
-
-        .spell-tag.cantrip { 
-            background: linear-gradient(135deg, #7c3aed, #6d28d9); 
-            color: white;
-            box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
-        }
-
-        .spell-tag.level1 { 
-            background: linear-gradient(135deg, #2563eb, #1d4ed8); 
-            color: white;
-            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
-        }
-
-        .copy-toast { 
-            position: fixed; 
-            bottom: 30px; 
-            left: 50%; 
-            transform: translateX(-50%); 
-            background: linear-gradient(135deg, #10b981, #059669); 
-            color: white; 
-            padding: 12px 24px; 
-            border-radius: 8px; 
-            font-weight: bold; 
-            opacity: 0; 
-            transition: opacity 0.3s; 
-            pointer-events: none; 
-            z-index: 1000;
-            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
-        }
-
-        .copy-toast.show { 
-            opacity: 1; 
-        }
-
-        .points-counter { 
-            background: linear-gradient(135deg, #f59e0b, #d97706); 
-            color: black; 
-            padding: 8px 16px; 
-            border-radius: 8px; 
-            font-weight: bold; 
-            display: inline-block;
-            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
-        }
-
-        .desc-box { 
-            background: rgba(30, 41, 59, 0.8); 
-            padding: 8px 12px; 
-            border-radius: 6px; 
-            margin: 4px 0; 
-            font-size: 12px; 
-            border-left: 3px solid #f59e0b;
-            backdrop-filter: blur(5px);
-        }
-
-        .info-button { 
-            display: inline-flex; 
-            align-items: center; 
-            gap: 6px; 
-            padding: 10px 20px; 
-            background: linear-gradient(135deg, #3b82f6, #2563eb); 
-            color: white; 
-            border-radius: 8px; 
-            font-weight: bold; 
-            text-decoration: none; 
-            transition: all 0.2s;
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
-        }
-
-        .info-button:hover { 
-            transform: translateY(-2px); 
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
-        }
-
-        .stat-recommended { 
-            border: 2px solid rgba(245, 158, 11, 0.8) !important; 
-            background: linear-gradient(135deg, rgba(39, 39, 42, 0.9), rgba(51, 51, 61, 0.9)) !important;
-            box-shadow: 0 0 20px rgba(245, 158, 11, 0.3) !important;
-        }
-
-        .stat-primary { 
-            border-left: 4px solid #f59e0b !important; 
-        }
-
-        .tip-banner { 
-            background: linear-gradient(135deg, rgba(30, 58, 95, 0.9), rgba(15, 23, 42, 0.9)); 
-            border: 1px solid rgba(59, 130, 246, 0.5); 
-            border-radius: 8px; 
-            padding: 12px; 
-            margin-bottom: 16px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-
-        .tip-primary { 
-            color: #f59e0b; 
-            font-weight: bold;
-            text-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
-        }
-
-        .tip-secondary { 
-            color: #60a5fa;
-            font-weight: 600;
-        }
-
-        /* Анимация появления - ТОЛЬКО для первого рендера */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .animate-fade-in {
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        /* Без анимации для шага характеристик */
-        .no-animation {
-            animation: none !important;
-        }
-
-        /* Скроллбар */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: rgba(0,0,0,0.3);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(135deg, #fbbf24, #f59e0b);
-        }
-
-        /* Стили для PDF генерации */
-        #character-sheet {
-            display: none;
-            background: #f5f0e1;
-            color: #1a1a1a;
-            padding: 40px;
-            font-family: 'Georgia', serif;
-        }
-
-        .sheet-header {
-            border-bottom: 3px solid #8b4513;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-        }
-
-        .sheet-section {
-            margin-bottom: 25px;
-            padding: 15px;
-            background: rgba(255,255,255,0.5);
-            border-radius: 5px;
-        }
-
-        .sheet-title {
-            font-family: 'Cinzel', serif;
-            font-size: 24px;
-            color: #8b4513;
-            margin-bottom: 15px;
-            border-bottom: 2px solid #8b4513;
-            padding-bottom: 5px;
-        }
+        .pdf-header { text-align: center; border-bottom: 3px solid #d97706; padding-bottom: 10px; margin-bottom: 15px; }
+        .pdf-title { font-size: 24px; font-weight: bold; color: #d97706; margin: 0; }
+        .pdf-section { margin-bottom: 12px; padding: 10px; background: #f9fafb; border-radius: 5px; border: 1px solid #e5e7eb; }
+        .pdf-section-title { font-size: 14px; font-weight: bold; color: #d97706; margin-bottom: 8px; border-bottom: 2px solid #d97706; padding-bottom: 3px; }
+        .pdf-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .pdf-stat-box { background: white; padding: 6px; border-radius: 4px; text-align: center; border: 1px solid #d1d5db; }
+        .pdf-stat-label { font-size: 10px; color: #6b7280; font-weight: 600; }
+        .pdf-stat-value { font-size: 18px; font-weight: bold; color: #d97706; margin: 2px 0; }
+        .pdf-stat-mod { font-size: 12px; color: #10b981; }
+        .pdf-info-row { display: flex; justify-content: space-between; margin: 4px 0; font-size: 11px; }
+        .pdf-info-label { color: #6b7280; font-weight: 600; }
+        .pdf-ability { background: white; padding: 6px; margin: 4px 0; border-radius: 4px; border-left: 3px solid #d97706; font-size: 10px; }
+        .pdf-ability-name { font-weight: bold; color: #d97706; }
+        .pdf-footer { text-align: center; margin-top: 20px; padding-top: 10px; border-top: 2px solid #d97706; color: #9ca3af; font-size: 10px; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center p-4">
 
     <div class="bg-image"></div>
     <div class="bg-overlay"></div>
+    <canvas id="particles-canvas"></canvas>
 
-    <header class="text-center mb-6 relative z-10 animate-fade-in">
-        <h1 class="text-5xl font-bold text-amber-500 mb-2 fantasy-title">⚔️ Fast D&D Builder</h1>
-        <p class="text-gray-300 mb-3 text-lg">Создай персонажа за 3 минуты • Шаг <span id="step-indicator" class="text-amber-400 font-bold">1</span> из <span id="total-steps" class="text-amber-400 font-bold">5</span></p>
-        <div class="flex gap-3 justify-center">
-            <button onclick="randomize()" class="px-6 py-2 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 rounded-lg font-bold text-sm transition shadow-lg hover:shadow-purple-500/50">🎲 Случайный персонаж</button>
-            <button onclick="generatePDF()" id="pdf-btn" class="hidden px-6 py-2 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 rounded-lg font-bold text-sm transition shadow-lg hover:shadow-green-500/50">📄 Скачать PDF лист</button>
+    <header class="text-center mb-6 relative z-10 animate-fade-in w-full max-w-5xl mx-auto px-4">
+        <h1 class="text-5xl font-bold text-amber-500 mb-2 fantasy-title">️ Fast D&D Builder</h1>
+        <p class="text-gray-300 mb-3 text-base md:text-lg">Создай персонажа за 3 минуты • Шаг <span id="step-indicator" class="text-amber-400 font-bold">1</span> из <span id="total-steps" class="text-amber-400 font-bold">5</span></p>
+        <div class="flex gap-3 justify-center flex-wrap">
+            <button onclick="randomize()" class="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 rounded-lg font-bold text-sm transition shadow-lg hover:shadow-purple-500/50 active:scale-95">🎲 Случайный</button>
+            <button onclick="clearSave()" class="px-5 py-2.5 bg-gradient-to-r from-gray-600 to-gray-500 hover:from-gray-500 hover:to-gray-400 rounded-lg font-bold text-sm transition shadow-lg active:scale-95">🗑️ Сброс</button>
         </div>
     </header>
 
-    <main id="app-container" class="w-full max-w-5xl bg-gray-900/80 p-8 rounded-2xl shadow-2xl border border-amber-600/30 backdrop-blur-xl relative z-10"></main>
+    <main id="app-container" class="w-full max-w-5xl bg-gray-900/80 p-6 md:p-8 rounded-2xl shadow-2xl border border-amber-600/30 backdrop-blur-xl relative z-10 mx-2 md:mx-0"></main>
 
-    <div class="flex gap-4 mt-6 w-full max-w-5xl justify-between relative z-10">
-        <button id="btn-back" onclick="prevStep()" class="hidden px-8 py-3 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 rounded-lg font-bold transition shadow-lg border border-amber-600/30">← Назад</button>
-        <button id="btn-next" onclick="nextStep()" class="px-8 py-3 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-black rounded-lg font-bold transition shadow-lg hover:shadow-amber-500/50 border border-amber-400/50 ml-auto">Далее →</button>
+    <div class="flex gap-4 mt-6 w-full max-w-5xl justify-between relative z-10 px-2 md:px-0 flex-wrap md:flex-nowrap">
+        <button id="btn-back" onclick="prevStep()" class="hidden px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 rounded-lg font-bold transition shadow-lg border border-amber-600/30 flex-1 md:flex-none active:scale-95">← Назад</button>
+        <button id="btn-next" onclick="nextStep()" class="px-6 py-3 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-black rounded-lg font-bold transition shadow-lg hover:shadow-amber-500/50 border border-amber-400/50 flex-1 md:flex-none ml-auto active:scale-95">Далее →</button>
     </div>
 
     <div id="copy-toast" class="copy-toast">✅ Лист скопирован в буфер обмена!</div>
 
-    <!-- Скрытый шаблон для PDF -->
     <div id="character-sheet">
-        <div class="sheet-header">
-            <h1 style="font-size: 36px; color: #8b4513; margin: 0;">ЛИСТ ПЕРСОНАЖА D&D 5e</h1>
-            <p style="font-size: 18px; color: #666; margin: 5px 0;">Создано в Fast D&D Builder</p>
+        <div class="pdf-header">
+            <h1 class="pdf-title">📜 ЛИСТ ПЕРСОНАЖА D&D 5e</h1>
+            <p style="color: #6b7280; margin: 5px 0;">Fast D&D Builder</p>
         </div>
-        
         <div id="sheet-content"></div>
+        <div class="pdf-footer">
+            Создано в Fast D&D Builder • <span id="pdf-date"></span>
+        </div>
     </div>
 
     <script>
-        // === ЭМОДЗИ ДЛЯ КЛАССОВ ===
-        const classEmojis = {
-            barbarian: '🪓',
-            bard: '🎵',
-            cleric: '⚕️',
-            druid: '🌿',
-            fighter: '⚔️',
-            monk: '👊',
-            paladin: '🛡️',
-            ranger: '🏹',
-            rogue: '🗡️',
-            sorcerer: '🔥',
-            warlock: '💀',
-            wizard: '📚'
-        };
+        const classEmojis = { barbarian: '🪓', bard: '🎵', cleric: '⚕️', druid: '🌿', fighter: '⚔️', monk: '👊', paladin: '️', ranger: '🏹', rogue: '🗡️', sorcerer: '', warlock: '💀', wizard: '📚' };
+        const raceEmojis = { human: '🧑', elf: '🧝', dwarf: '🧔', gnome: '🧚', halfling: '', halfelf: '🧝♂️', halforc: '👹', tiefling: '😈', dragonborn: '🐉' };
+        const classIcons = { barbarian: 'images/classes/barbarian.png', bard: 'images/classes/bard.png', cleric: 'images/classes/cleric.png', druid: 'images/classes/druid.png', fighter: 'images/classes/fighter.png', monk: 'images/classes/monk.png', paladin: 'images/classes/paladin.png', ranger: 'images/classes/ranger.png', rogue: 'images/classes/rogue.png', sorcerer: 'images/classes/sorcerer.png', warlock: 'images/classes/warlock.png', wizard: 'images/classes/wizard.png' };
+        const raceIcons = { human: 'images/races/human.png', elf: 'images/races/elf.png', dwarf: 'images/races/dwarf.png', gnome: 'images/races/gnome.png', halfling: 'images/races/halfling.png', halfelf: 'images/races/halfelf.png', halforc: 'images/races/halforc.png', tiefling: 'images/races/tiefling.png', dragonborn: 'images/races/dragonborn.png' };
 
-        // === ЭМОДЗИ ДЛЯ РАС ===
-        const raceEmojis = {
-            human: '🧑',
-            elf: '🧝',
-            dwarf: '🧔',
-            gnome: '🧚',
-            halfling: '🧑',
-            halfelf: '🧝‍♂️',
-            halforc: '👹',
-            tiefling: '😈',
-            dragonborn: '🐉'
-        };
-
-        // === ИКОНКИ КЛАССОВ - ЛОКАЛЬНЫЕ ===
-        const classIcons = {
-            barbarian: 'images/classes/barbarian.png',
-            bard: 'images/classes/bard.png',
-            cleric: 'images/classes/cleric.png',
-            druid: 'images/classes/druid.png',
-            fighter: 'images/classes/fighter.png',
-            monk: 'images/classes/monk.png',
-            paladin: 'images/classes/paladin.png',
-            ranger: 'images/classes/ranger.png',
-            rogue: 'images/classes/rogue.png',
-            sorcerer: 'images/classes/sorcerer.png',
-            warlock: 'images/classes/warlock.png',
-            wizard: 'images/classes/wizard.png'
-        };
-
-        // === ИКОНКИ РАС - ЛОКАЛЬНЫЕ ===
-        const raceIcons = {
-            human: 'images/races/human.png',
-            elf: 'images/races/elf.png',
-            dwarf: 'images/races/dwarf.png',
-            gnome: 'images/races/gnome.png',
-            halfling: 'images/races/halfling.png',
-            halfelf: 'images/races/halfelf.png',
-            halforc: 'images/races/halforc.png',
-            tiefling: 'images/races/tiefling.png',
-            dragonborn: 'images/races/dragonborn.png'
-        };
-
-        // Функция для обработки ошибок загрузки изображений
-        function handleImageError(img, emoji, type) {
-            img.style.display = 'none';
-            const placeholder = document.createElement('div');
-            placeholder.className = type === 'class' ? 'icon-placeholder' : 'race-icon-placeholder';
-            placeholder.textContent = emoji;
-            img.parentNode.insertBefore(placeholder, img.nextSibling);
-        }
-
-        // === ДАННЫЕ D&D 5e SRD ===
         const races = [
-            { 
-                id: 'human', 
-                name: 'Человек', 
-                bonus: { str: 1, dex: 1, con: 1, int: 1, wis: 1, cha: 1 }, 
-                speed: 30,
-                desc: '+1 ко всем характеристикам. Универсальная и амбициозная раса.',
-                abilities: [
-                    { name: 'Дополнительный язык', desc: 'Вы можете говорить, читать и писать на одном дополнительном языке по вашему выбору' },
-                    { name: 'Универсальность адаптации', desc: 'Люди адаптируются к любой ситуации и быстро осваивают новые навыки' }
-                ]
-            },
-            { 
-                id: 'elf', 
-                name: 'Эльф', 
-                bonus: { dex: 2 }, 
-                speed: 30,
-                desc: '+2 Ловкость. Грациозные долгожители с тёмным зрением.',
-                abilities: [
-                    { name: 'Тёмное зрение', desc: 'Вы видите в темноте на расстоянии до 60 футов как при тусклом свете' },
-                    { name: 'Fey Ancestry', desc: 'Преимущество на спасброски от очарования и иммунитет к магическому сну' },
-                    { name: 'Транс', desc: 'Эльфы не спят, а медитируют 4 часа в день (как 8 часов сна)' },
-                    { name: 'Восприятие', desc: 'Вы владеете навыком Восприятие' }
-                ]
-            },
-            { 
-                id: 'dwarf', 
-                name: 'Дварф', 
-                bonus: { con: 2 }, 
-                speed: 25,
-                desc: '+2 Телосложение. Крепкие воины и кузнецы.',
-                abilities: [
-                    { name: 'Тёмное зрение', desc: 'Вы видите в темноте на расстоянии до 60 футов' },
-                    { name: 'Дварфийская устойчивость', desc: 'Преимущество на спасброски от яда и сопротивление урону ядом' },
-                    { name: 'Владение оружием', desc: 'Вы владеете боевыми топорами, ручными топорами, лёгкими и тяжёлыми молотами' }
-                ]
-            },
-            { 
-                id: 'gnome', 
-                name: 'Гном', 
-                bonus: { int: 2 }, 
-                speed: 25,
-                desc: '+2 Интеллект. Маленькие изобретатели с природной магией.',
-                abilities: [
-                    { name: 'Тёмное зрение', desc: 'Вы видите в темноте на расстоянии до 60 футов' },
-                    { name: 'Гномья хитрость', desc: 'Преимущество на спасброски Интеллекта, Мудрости и Харизмы против магии' }
-                ]
-            },
-            { 
-                id: 'halfling', 
-                name: 'Полурослик', 
-                bonus: { dex: 2 }, 
-                speed: 25,
-                desc: '+2 Ловкость. Удача позволяет перебрасывать 1 на кубах.',
-                abilities: [
-                    { name: 'Удача', desc: 'Когда вы выбрасываете 1 на d20, вы можете перебросить кубик' },
-                    { name: 'Храбрость', desc: 'Преимущество на спасброски от испуга' },
-                    { name: 'Полуросличья хитрость', desc: 'Вы можете проходить сквозь пространство существ, которые больше вас' }
-                ]
-            },
-            { 
-                id: 'halfelf', 
-                name: 'Полуэльф', 
-                bonus: { cha: 2 }, 
-                speed: 30,
-                desc: '+2 Харизма, +1 к двум на выбор. Универсальные дипломаты.',
-                abilities: [
-                    { name: 'Тёмное зрение', desc: 'Вы видите в темноте на расстоянии до 60 футов' },
-                    { name: 'Fey Ancestry', desc: 'Преимущество от очарования и иммунитет ко магическому сну' },
-                    { name: 'Два навыка', desc: 'Вы владеете двумя навыками на ваш выбор' }
-                ]
-            },
-            { 
-                id: 'halforc', 
-                name: 'Полуорк', 
-                bonus: { str: 2, con: 1 }, 
-                speed: 30,
-                desc: '+2 Сила, +1 Телосложение. Свирепые воины.',
-                abilities: [
-                    { name: 'Тёмное зрение', desc: 'Вы видите в темноте на расстоянии до 60 футов' },
-                    { name: 'Неистовые атаки', desc: 'Когда вы выбрасываете критический урон, вы можете бросить одну кость урона ещё раз' },
-                    { name: 'Неукротимость', desc: 'Когда вы должны упасть до 0 хитов, вы остаётесь с 1 хитом вместо этого (1/длинный отдых)' },
-                    { name: 'Запугивание', desc: 'Вы владеете навыком Запугивание' }
-                ]
-            },
-            { 
-                id: 'tiefling', 
-                name: 'Тифлинг', 
-                bonus: { cha: 2, int: 1 }, 
-                speed: 30,
-                desc: '+2 Харизма, +1 Интеллект. Потомки дьяволов с огненной магией.',
-                abilities: [
-                    { name: 'Тёмное зрение', desc: 'Вы видите в темноте на расстоянии до 60 футов' },
-                    { name: 'Адское наследие', desc: 'Вы имеете сопротивление урону огнём' },
-                    { name: 'Адское колдовство', desc: 'Вы знаете заговор Чудотворство. На 3 уровне можете колдовать Адское возмездие 1/день, на 5 уровне — Тьму 1/день' }
-                ]
-            },
-            { 
-                id: 'dragonborn', 
-                name: 'Драконорождённый', 
-                bonus: { str: 2, cha: 1 }, 
-                speed: 30,
-                desc: '+2 Сила, +1 Харизма. Дыхание дракона и сопротивление стихии.',
-                abilities: [
-                    { name: 'Дыхание дракона', desc: 'Вы можете выдохнуть разрушительную энергию в конусе 5 футов (урон зависит от предка дракона, 1/короткий отдых)' },
-                    { name: 'Сопротивление урону', desc: 'Вы имеете сопротивление одному типу урона в зависимости от вашего драконьего предка' }
-                ]
-            }
+            { id: 'human', name: 'Человек', bonus: { str: 1, dex: 1, con: 1, int: 1, wis: 1, cha: 1 }, speed: 30, desc: '+1 ко всем характеристикам. Универсальная и амбициозная раса.', abilities: [{ name: 'Дополнительный язык', desc: 'Вы можете говорить, читать и писать на одном дополнительном языке по вашему выбору' }, { name: 'Универсальность адаптации', desc: 'Люди адаптируются к любой ситуации и быстро осваивают новые навыки' }] },
+            { id: 'elf', name: 'Эльф', bonus: { dex: 2 }, speed: 30, desc: '+2 Ловкость. Грациозные долгожители с тёмным зрением.', abilities: [{ name: 'Тёмное зрение', desc: 'Вы видите в темноте на расстоянии до 60 футов как при тусклом свете' }, { name: 'Fey Ancestry', desc: 'Преимущество на спасброски от очарования и иммунитет к магическому сну' }, { name: 'Транс', desc: 'Эльфы не спят, а медитируют 4 часа в день (как 8 часов сна)' }, { name: 'Восприятие', desc: 'Вы владеете навыком Восприятие' }] },
+            { id: 'dwarf', name: 'Дварф', bonus: { con: 2 }, speed: 25, desc: '+2 Телосложение. Крепкие воины и кузнецы.', abilities: [{ name: 'Тёмное зрение', desc: 'Вы видите в темноте на расстоянии до 60 футов' }, { name: 'Дварфийская устойчивость', desc: 'Преимущество на спасброски от яда и сопротивление урону ядом' }, { name: 'Владение оружием', desc: 'Вы владеете боевыми топорами, ручными топорами, лёгкими и тяжёлыми молотами' }] },
+            { id: 'gnome', name: 'Гном', bonus: { int: 2 }, speed: 25, desc: '+2 Интеллект. Маленькие изобретатели с природной магией.', abilities: [{ name: 'Тёмное зрение', desc: 'Вы видите в темноте на расстоянии до 60 футов' }, { name: 'Гномья хитрость', desc: 'Преимущество на спасброски Интеллекта, Мудрости и Харизмы против магии' }] },
+            { id: 'halfling', name: 'Полурослик', bonus: { dex: 2 }, speed: 25, desc: '+2 Ловкость. Удача позволяет перебрасывать 1 на кубах.', abilities: [{ name: 'Удача', desc: 'Когда вы выбрасываете 1 на d20, вы можете перебросить кубик' }, { name: 'Храбрость', desc: 'Преимущество на спасброски от испуга' }, { name: 'Полуросличья хитрость', desc: 'Вы можете проходить сквозь пространство существ, которые больше вас' }] },
+            { id: 'halfelf', name: 'Полуэльф', bonus: { cha: 2 }, speed: 30, desc: '+2 Харизма, +1 к двум на выбор. Универсальные дипломаты.', abilities: [{ name: 'Тёмное зрение', desc: 'Вы видите в темноте на расстоянии до 60 футов' }, { name: 'Fey Ancestry', desc: 'Преимущество от очарования и иммунитет ко магическому сну' }, { name: 'Два навыка', desc: 'Вы владеете двумя навыками на ваш выбор' }] },
+            { id: 'halforc', name: 'Полуорк', bonus: { str: 2, con: 1 }, speed: 30, desc: '+2 Сила, +1 Телосложение. Свирепые воины.', abilities: [{ name: 'Тёмное зрение', desc: 'Вы видите в темноте на расстоянии до 60 футов' }, { name: 'Неистовые атаки', desc: 'Когда вы выбрасываете критический урон, вы можете бросить одну кость урона ещё раз' }, { name: 'Неукротимость', desc: 'Когда вы должны упасть до 0 хитов, вы остаётесь с 1 хитом вместо этого (1/длинный отдых)' }, { name: 'Запугивание', desc: 'Вы владеете навыком Запугивание' }] },
+            { id: 'tiefling', name: 'Тифлинг', bonus: { cha: 2, int: 1 }, speed: 30, desc: '+2 Харизма, +1 Интеллект. Потомки дьяволов с огненной магией.', abilities: [{ name: 'Тёмное зрение', desc: 'Вы видите в темноте на расстоянии до 60 футов' }, { name: 'Адское наследие', desc: 'Вы имеете сопротивление урону огнём' }, { name: 'Адское колдовство', desc: 'Вы знаете заговор Чудотворство. На 3 уровне можете колдовать Адское возмездие 1/день, на 5 уровне — Тьму 1/день' }] },
+            { id: 'dragonborn', name: 'Драконорождённый', bonus: { str: 2, cha: 1 }, speed: 30, desc: '+2 Сила, +1 Харизма. Дыхание дракона и сопротивление стихии.', abilities: [{ name: 'Дыхание дракона', desc: 'Вы можете выдохнуть разрушительную энергию в конусе 5 футов (урон зависит от предка дракона, 1/короткий отдых)' }, { name: 'Сопротивление урону', desc: 'Вы имеете сопротивление одному типу урона в зависимости от вашего драконьего предка' }] }
         ];
 
         const classes = [
-            { 
-                id: 'barbarian', 
-                name: 'Варвар', 
-                hitDie: 12, 
-                primary: 'Сила', 
-                speed: 0,
-                desc: 'Яростный воин, впадающий в неистовство.', 
-                magic: false,
-                skills: ['Атлетика', 'Выживание', 'Запугивание', 'Природа', 'Проницательность', 'Работа с животными'],
-                skillsCount: 2,
-                armor: ['Лёгкие доспехи', 'Средние доспехи', 'Щиты'],
-                weapons: ['Простое оружие', 'Воинское оружие'],
-                tools: [],
-                saves: ['Сила', 'Телосложение'],
-                features: [
-                    { name: 'Неистовство', desc: '2/короткий отдых: бонусное действие для преимущества на проверки Силы, сопротивление урону дробящему/колющему/рубящему и +2 к урону оружием Силы' },
-                    { name: 'Защита без доспехов', desc: 'Когда вы не в доспехах, ваш КД = 10 + модификатор Ловкости + модификатор Телосложения' }
-                ],
-                statTips: { primary: 'str', secondary: 'con', tip: 'Сила — для атак и урона. Телосложение — для КД без доспехов и хитов.' }
-            },
-            { 
-                id: 'bard', 
-                name: 'Бард', 
-                hitDie: 8, 
-                primary: 'Харизма', 
-                speed: 0,
-                desc: 'Вдохновляющий маг-музыкант.', 
-                magic: true, 
-                cantrips: 2, 
-                spells1: 4,
-                skills: ['Любые 3 навыка на выбор'],
-                skillsCount: 3,
-                armor: ['Лёгкие доспехи'],
-                weapons: ['Простое оружие', 'Ручные арбалеты', 'Длинные мечи', 'Рапиры', 'Короткие мечи'],
-                tools: ['Три музыкальных инструмента на выбор'],
-                saves: ['Ловкость', 'Харизма'],
-                features: [
-                    { name: 'Вдохновение барда', desc: '3/короткий отдых: бонусное действие, чтобы дать союзнику кость d6, которую он может добавить к проверке характеристики, атаке или спасброску' },
-                    { name: 'Заклинания барда', desc: 'Вы знаете 2 заговора и 4 заклинания 1-го уровня из списка барда' }
-                ],
-                statTips: { primary: 'cha', secondary: 'dex', tip: 'Харизма — для заклинаний и Вдохновения. Ловкость — для КД и инициативы.' }
-            },
-            { 
-                id: 'fighter', 
-                name: 'Воин', 
-                hitDie: 10, 
-                primary: 'Сила/Ловкость', 
-                speed: 0,
-                desc: 'Мастер оружия и доспехов.', 
-                magic: false,
-                skills: ['Акробатика', 'Работа с животными', 'Атлетика', 'История', 'Проницательность', 'Запугивание', 'Восприятие', 'Выживание'],
-                skillsCount: 2,
-                armor: ['Все доспехи', 'Щиты'],
-                weapons: ['Простое оружие', 'Воинское оружие'],
-                tools: [],
-                saves: ['Сила', 'Телосложение'],
-                features: [
-                    { name: 'Боевой стиль', desc: 'Выберите стиль: Защита (+1 к КД), Дуэлянт (+2 к урону одноручным), Дальний бой, Два оружия и др.' },
-                    { name: 'Второе дыхание', desc: '1/короткий отдых: бонусное действие для восстановления 1d10 + уровень хитов' }
-                ],
-                statTips: { primary: 'str', secondary: 'con', tip: 'Сила/Ловкость — для атак. Телосложение — для хитов. Выберите один основной стат.' }
-            },
-            { 
-                id: 'wizard', 
-                name: 'Волшебник', 
-                hitDie: 6, 
-                primary: 'Интеллект', 
-                speed: 0,
-                desc: 'Учёный маг с огромным выбором заклинаний.', 
-                magic: true, 
-                cantrips: 3, 
-                spells1: 6,
-                skills: ['Магия', 'История', 'Проницательность', 'Расследование', 'Медицина', 'Религия'],
-                skillsCount: 2,
-                armor: [],
-                weapons: ['Кинжалы', 'Дротики', 'Посохи', 'Лёгкие арбалеты', 'Короткие мечи', 'Длинные мечи'],
-                tools: [],
-                saves: ['Интеллект', 'Мудрость'],
-                features: [
-                    { name: 'Магическое восстановление', desc: '1/день: бонусное действие для восстановления ячеек заклинаний с суммарным уровнем ≤ половина вашего уровня' },
-                    { name: 'Арканная традиция', desc: 'На 2 уровне вы выберете специализацию: Школа эвокации, иллюзии, некромантии и др.' }
-                ],
-                statTips: { primary: 'int', secondary: 'con', tip: 'Интеллект — для заклинаний и КД заклинаний. Телосложение — для концентрации и хитов.' }
-            },
-            { 
-                id: 'rogue', 
-                name: 'Плут', 
-                hitDie: 8, 
-                primary: 'Ловкость', 
-                speed: 0,
-                desc: 'Мастер скрытности и точных ударов.', 
-                magic: false,
-                skills: ['Акробатика', 'Атлетика', 'Обман', 'Проницательность', 'Запугивание', 'Расследование', 'Восприятие', 'Выступление', 'Убеждение', 'Ловкость рук', 'Скрытность'],
-                skillsCount: 4,
-                armor: ['Лёгкие доспехи'],
-                weapons: ['Простое оружие', 'Ручные арбалеты', 'Длинные мечи', 'Рапиры', 'Короткие мечи'],
-                tools: ['Воровские инструменты'],
-                saves: ['Ловкость', 'Интеллект'],
-                features: [
-                    { name: 'Скрытая атака', desc: '1d6 дополнительного урона, если у вас преимущество или союзник рядом с целью. Увеличивается с уровнем' },
-                    { name: 'Воровской жаргон', desc: 'Вы знаете секретный язык воров, понятный только плутам' }
-                ],
-                statTips: { primary: 'dex', secondary: 'int', tip: 'Ловкость — для атак, КД, инициативы и Скрытности. Интеллект — для Расследования.' }
-            },
-            { 
-                id: 'cleric', 
-                name: 'Жрец', 
-                hitDie: 8, 
-                primary: 'Мудрость', 
-                speed: 0,
-                desc: 'Посредник богов. Мастер исцеления.', 
-                magic: true, 
-                cantrips: 3, 
-                spells1: 2,
-                skills: ['История', 'Проницательность', 'Медицина', 'Убеждение', 'Религия'],
-                skillsCount: 2,
-                armor: ['Лёгкие доспехи', 'Средние доспехи', 'Щиты'],
-                weapons: ['Простое оружие'],
-                tools: [],
-                saves: ['Мудрость', 'Харизма'],
-                features: [
-                    { name: 'Божественный домен', desc: 'На 1 уровне вы выберете домен своего божества: Жизнь, Свет, Война, Обман и др., что даёт дополнительные заклинания и способности' },
-                    { name: 'Изгнание нежити', desc: '1/короткий отдых: действие, чтобы заставить нежить в радиусе 30 футов совершить спасбросок или быть уничтоженной/обращённой' }
-                ],
-                statTips: { primary: 'wis', secondary: 'con', tip: 'Мудрость — для заклинаний и КД заклинаний. Телосложение — для концентрации.' }
-            },
-            { 
-                id: 'ranger', 
-                name: 'Следопыт', 
-                hitDie: 10, 
-                primary: 'Ловкость/Мудрость', 
-                speed: 0,
-                desc: 'Охотник диких земель.', 
-                magic: true, 
-                cantrips: 0, 
-                spells1: 2,
-                skills: ['Работа с животными', 'Атлетика', 'Проницательность', 'Расследование', 'Природа', 'Восприятие', 'Скрытность', 'Выживание'],
-                skillsCount: 3,
-                armor: ['Лёгкие доспехи', 'Средние доспехи', 'Щиты'],
-                weapons: ['Простое оружие', 'Воинское оружие'],
-                tools: [],
-                saves: ['Сила', 'Ловкость'],
-                features: [
-                    { name: 'Избранная местность', desc: 'Выберите тип местности: арктическая, лес, горы и др. Вы получаете преимущества при путешествии в ней' },
-                    { name: 'Избранный враг', desc: 'Выберите тип существ: драконы, нежить, великаны и др. Вы получаете преимущество на отслеживание и знание о них' }
-                ],
-                statTips: { primary: 'dex', secondary: 'wis', tip: 'Ловкость — для атак и КД. Мудрость — для заклинаний и Восприятия.' }
-            },
-            { 
-                id: 'paladin', 
-                name: 'Паладин', 
-                hitDie: 10, 
-                primary: 'Сила/Харизма', 
-                speed: 0,
-                desc: 'Святой воин с божественной магией.', 
-                magic: true, 
-                cantrips: 0, 
-                spells1: 2,
-                skills: ['Атлетика', 'Проницательность', 'Запугивание', 'Медицина', 'Убеждение', 'Религия'],
-                skillsCount: 2,
-                armor: ['Все доспехи', 'Щиты'],
-                weapons: ['Простое оружие', 'Воинское оружие'],
-                tools: [],
-                saves: ['Мудрость', 'Харизма'],
-                features: [
-                    { name: 'Божественное чувство', desc: 'Вы можете действием почувствовать присутствие исчадий, нежити или святых в радиусе 60 футов' },
-                    { name: 'Возложение рук', desc: 'У вас есть пул лечения 5×уровень хитов. Вы можете действием коснуться существа и восстановить хиты из пула' }
-                ],
-                statTips: { primary: 'str', secondary: 'cha', tip: 'Сила — для атак. Харизма — для заклинаний и КД заклинаний.' }
-            },
-            { 
-                id: 'sorcerer', 
-                name: 'Чародей', 
-                hitDie: 6, 
-                primary: 'Харизма', 
-                speed: 0,
-                desc: 'Рождённый с магией в крови.', 
-                magic: true, 
-                cantrips: 4, 
-                spells1: 2,
-                skills: ['Магия', 'Обман', 'Проницательность', 'Запугивание', 'Убеждение', 'Религия'],
-                skillsCount: 2,
-                armor: [],
-                weapons: ['Кинжалы', 'Дротики', 'Посохи', 'Лёгкие арбалеты', 'Короткие мечи', 'Длинные мечи'],
-                tools: [],
-                saves: ['Телосложение', 'Харизма'],
-                features: [
-                    { name: 'Источник магии', desc: 'На 2 уровне вы выберете происхождение: Драконья кровь, Дикая магия и др.' },
-                    { name: 'Метамагия', desc: 'На 3 уровне вы получите очки чародея для усиления заклинаний: удвоение, тихое, быстрое и др.' }
-                ],
-                statTips: { primary: 'cha', secondary: 'con', tip: 'Харизма — для заклинаний. Телосложение — для концентрации и спасбросков.' }
-            },
-            { 
-                id: 'warlock', 
-                name: 'Колдун', 
-                hitDie: 8, 
-                primary: 'Харизма', 
-                speed: 0,
-                desc: 'Получил силу от покровителя.', 
-                magic: true, 
-                cantrips: 2, 
-                spells1: 2,
-                skills: ['Магия', 'Обман', 'История', 'Запугивание', 'Расследование', 'Природа', 'Религия'],
-                skillsCount: 2,
-                armor: ['Лёгкие доспехи'],
-                weapons: ['Простое оружие'],
-                tools: [],
-                saves: ['Мудрость', 'Харизма'],
-                features: [
-                    { name: 'Договор покровителя', desc: 'Вы заключили пакт с могущественным существом: Архифея, Исчадия, Великого Древнего и др.' },
-                    { name: 'Мистические тайны', desc: 'Вы знаете 2 заговора и 2 заклинания 1-го уровня. Ячейки восстанавливаются на коротком отдыхе' }
-                ],
-                statTips: { primary: 'cha', secondary: 'con', tip: 'Харизма — для заклинаний. Телосложение — для концентрации.' }
-            },
-            { 
-                id: 'monk', 
-                name: 'Монах', 
-                hitDie: 8, 
-                primary: 'Ловкость/Мудрость', 
-                speed: 0,
-                desc: 'Мастер боевых искусств, использующий ци.', 
-                magic: false,
-                skills: ['Акробатика', 'Атлетика', 'История', 'Проницательность', 'Религия', 'Скрытность'],
-                skillsCount: 2,
-                armor: [],
-                weapons: ['Простое оружие', 'Короткие мечи'],
-                tools: ['Один музыкальный инструмент или ремесленный инструмент на выбор'],
-                saves: ['Сила', 'Ловкость'],
-                features: [
-                    { name: 'Боевые искусства', desc: 'Вы можете использовать Ловкость вместо Силы для атак невооружённым ударом и монашеским оружием. Кость урона 1d4' },
-                    { name: 'Невооружённая защита', desc: 'Когда вы без доспехов и щита, ваш КД = 10 + модификатор Ловкости + модификатор Мудрости' }
-                ],
-                statTips: { primary: 'dex', secondary: 'wis', tip: 'Ловкость и Мудрость — обе важны для КД, атак и спасбросков. Распределяй поровну.' }
-            },
-            { 
-                id: 'druid', 
-                name: 'Друид', 
-                hitDie: 8, 
-                primary: 'Мудрость', 
-                speed: 0,
-                desc: 'Жрец природы, способный превращаться в животных.', 
-                magic: true, 
-                cantrips: 2, 
-                spells1: 2,
-                skills: ['Магия', 'Работа с животными', 'Проницательность', 'Медицина', 'Природа', 'Восприятие', 'Религия', 'Выживание'],
-                skillsCount: 2,
-                armor: ['Лёгкие доспехи', 'Средние доспехи', 'Щиты (не металлические)'],
-                weapons: ['Булавы', 'Кинжалы', 'Дротики', 'Посохи', 'Серпы', 'Короткие мечи', 'Копья', 'Скимитары', 'Пращи'],
-                tools: ['Набор травника'],
-                saves: ['Интеллект', 'Мудрость'],
-                features: [
-                    { name: 'Друидический круг', desc: 'На 2 уровне вы выберете круг: Круг земли, Круг луны и др., что даёт дополнительные способности' },
-                    { name: 'Друидический язык', desc: 'Вы знаете секретный язык друидов, понятный только им' }
-                ],
-                statTips: { primary: 'wis', secondary: 'con', tip: 'Мудрость — для заклинаний. Телосложение — для концентрации и формы зверя.' }
-            }
+            { id: 'barbarian', name: 'Варвар', hitDie: 12, primary: 'Сила', desc: 'Яростный воин, впадающий в неистовство.', magic: false, skills: ['Атлетика', 'Выживание', 'Запугивание', 'Природа', 'Проницательность', 'Работа с животными'], skillsCount: 2, armor: ['Лёгкие доспехи', 'Средние доспехи', 'Щиты'], weapons: ['Простое оружие', 'Воинское оружие'], tools: [], saves: ['Сила', 'Телосложение'], features: [{ name: 'Неистовство', desc: '2/короткий отдых: бонусное действие для преимущества на проверки Силы, сопротивление урону дробящему/колющему/рубящему и +2 к урону оружием Силы' }, { name: 'Защита без доспехов', desc: 'Когда вы не в доспехах, ваш КД = 10 + модификатор Ловкости + модификатор Телосложения' }], statTips: { primary: 'str', secondary: 'con', tip: 'Сила — для атак и урона. Телосложение — для КД без доспехов и хитов.' } },
+            { id: 'bard', name: 'Бард', hitDie: 8, primary: 'Харизма', desc: 'Вдохновляющий маг-музыкант.', magic: true, cantrips: 2, spells1: 4, skills: ['Любые 3 навыка на выбор'], skillsCount: 3, armor: ['Лёгкие доспехи'], weapons: ['Простое оружие', 'Ручные арбалеты', 'Длинные мечи', 'Рапиры', 'Короткие мечи'], tools: ['Три музыкальных инструмента на выбор'], saves: ['Ловкость', 'Харизма'], features: [{ name: 'Вдохновение барда', desc: '3/короткий отдых: бонусное действие, чтобы дать союзнику кость d6, которую он может добавить к проверке характеристики, атаке или спасброску' }, { name: 'Заклинания барда', desc: 'Вы знаете 2 заговора и 4 заклинания 1-го уровня из списка барда' }], statTips: { primary: 'cha', secondary: 'dex', tip: 'Харизма — для заклинаний и Вдохновения. Ловкость — для КД и инициативы.' } },
+            { id: 'fighter', name: 'Воин', hitDie: 10, primary: 'Сила/Ловкость', desc: 'Мастер оружия и доспехов.', magic: false, skills: ['Акробатика', 'Работа с животными', 'Атлетика', 'История', 'Проницательность', 'Запугивание', 'Восприятие', 'Выживание'], skillsCount: 2, armor: ['Все доспехи', 'Щиты'], weapons: ['Простое оружие', 'Воинское оружие'], tools: [], saves: ['Сила', 'Телосложение'], features: [{ name: 'Боевой стиль', desc: 'Выберите стиль: Защита (+1 к КД), Дуэлянт (+2 к урону одноручным), Дальний бой, Два оружия и др.' }, { name: 'Второе дыхание', desc: '1/короткий отдых: бонусное действие для восстановления 1d10 + уровень хитов' }], statTips: { primary: 'str', secondary: 'con', tip: 'Сила/Ловкость — для атак. Телосложение — для хитов. Выберите один основной стат.' } },
+            { id: 'wizard', name: 'Волшебник', hitDie: 6, primary: 'Интеллект', desc: 'Учёный маг с огромным выбором заклинаний.', magic: true, cantrips: 3, spells1: 6, skills: ['Магия', 'История', 'Проницательность', 'Расследование', 'Медицина', 'Религия'], skillsCount: 2, armor: [], weapons: ['Кинжалы', 'Дротики', 'Посохи', 'Лёгкие арбалеты', 'Короткие мечи', 'Длинные мечи'], tools: [], saves: ['Интеллект', 'Мудрость'], features: [{ name: 'Магическое восстановление', desc: '1/день: бонусное действие для восстановления ячеек заклинаний с суммарным уровнем ≤ половина вашего уровня' }, { name: 'Арканная традиция', desc: 'На 2 уровне вы выберете специализацию: Школа эвокации, иллюзии, некромантии и др.' }], statTips: { primary: 'int', secondary: 'con', tip: 'Интеллект — для заклинаний и КД заклинаний. Телосложение — для концентрации и хитов.' } },
+            { id: 'rogue', name: 'Плут', hitDie: 8, primary: 'Ловкость', desc: 'Мастер скрытности и точных ударов.', magic: false, skills: ['Акробатика', 'Атлетика', 'Обман', 'Проницательность', 'Запугивание', 'Расследование', 'Восприятие', 'Выступление', 'Убеждение', 'Ловкость рук', 'Скрытность'], skillsCount: 4, armor: ['Лёгкие доспехи'], weapons: ['Простое оружие', 'Ручные арбалеты', 'Длинные мечи', 'Рапиры', 'Короткие мечи'], tools: ['Воровские инструменты'], saves: ['Ловкость', 'Интеллект'], features: [{ name: 'Скрытая атака', desc: '1d6 дополнительного урона, если у вас преимущество или союзник рядом с целью. Увеличивается с уровнем' }, { name: 'Воровской жаргон', desc: 'Вы знаете секретный язык воров, понятный только плутам' }], statTips: { primary: 'dex', secondary: 'int', tip: 'Ловкость — для атак, КД, инициативы и Скрытности. Интеллект — для Расследования.' } },
+            { id: 'cleric', name: 'Жрец', hitDie: 8, primary: 'Мудрость', desc: 'Посредник богов. Мастер исцеления.', magic: true, cantrips: 3, spells1: 2, skills: ['История', 'Проницательность', 'Медицина', 'Убеждение', 'Религия'], skillsCount: 2, armor: ['Лёгкие доспехи', 'Средние доспехи', 'Щиты'], weapons: ['Простое оружие'], tools: [], saves: ['Мудрость', 'Харизма'], features: [{ name: 'Божественный домен', desc: 'На 1 уровне вы выберете домен своего божества: Жизнь, Свет, Война, Обман и др., что даёт дополнительные заклинания и способности' }, { name: 'Изгнание нежити', desc: '1/короткий отдых: действие, чтобы заставить нежить в радиусе 30 футов совершить спасбросок или быть уничтоженной/обращённой' }], statTips: { primary: 'wis', secondary: 'con', tip: 'Мудрость — для заклинаний и КД заклинаний. Телосложение — для концентрации.' } },
+            { id: 'ranger', name: 'Следопыт', hitDie: 10, primary: 'Ловкость/Мудрость', desc: 'Охотник диких земель.', magic: true, cantrips: 0, spells1: 2, skills: ['Работа с животными', 'Атлетика', 'Проницательность', 'Расследование', 'Природа', 'Восприятие', 'Скрытность', 'Выживание'], skillsCount: 3, armor: ['Лёгкие доспехи', 'Средние доспехи', 'Щиты'], weapons: ['Простое оружие', 'Воинское оружие'], tools: [], saves: ['Сила', 'Ловкость'], features: [{ name: 'Избранная местность', desc: 'Выберите тип местности: арктическая, лес, горы и др. Вы получаете преимущества при путешествии в ней' }, { name: 'Избранный враг', desc: 'Выберите тип существ: драконы, нежить, великаны и др. Вы получаете преимущество на отслеживание и знание о них' }], statTips: { primary: 'dex', secondary: 'wis', tip: 'Ловкость — для атак и КД. Мудрость — для заклинаний и Восприятия.' } },
+            { id: 'paladin', name: 'Паладин', hitDie: 10, primary: 'Сила/Харизма', desc: 'Святой воин с божественной магией.', magic: true, cantrips: 0, spells1: 2, skills: ['Атлетика', 'Проницательность', 'Запугивание', 'Медицина', 'Убеждение', 'Религия'], skillsCount: 2, armor: ['Все доспехи', 'Щиты'], weapons: ['Простое оружие', 'Воинское оружие'], tools: [], saves: ['Мудрость', 'Харизма'], features: [{ name: 'Божественное чувство', desc: 'Вы можете действием почувствовать присутствие исчадий, нежити или святых в радиусе 60 футов' }, { name: 'Возложение рук', desc: 'У вас есть пул лечения 5×уровень хитов. Вы можете действием коснуться существа и восстановить хиты из пула' }], statTips: { primary: 'str', secondary: 'cha', tip: 'Сила — для атак. Харизма — для заклинаний и КД заклинаний.' } },
+            { id: 'sorcerer', name: 'Чародей', hitDie: 6, primary: 'Харизма', desc: 'Рождённый с магией в крови.', magic: true, cantrips: 4, spells1: 2, skills: ['Магия', 'Обман', 'Проницательность', 'Запугивание', 'Убеждение', 'Религия'], skillsCount: 2, armor: [], weapons: ['Кинжалы', 'Дротики', 'Посохи', 'Лёгкие арбалеты', 'Короткие мечи', 'Длинные мечи'], tools: [], saves: ['Телосложение', 'Харизма'], features: [{ name: 'Источник магии', desc: 'На 2 уровне вы выберете происхождение: Драконья кровь, Дикая магия и др.' }, { name: 'Метамагия', desc: 'На 3 уровне вы получите очки чародея для усиления заклинаний: удвоение, тихое, быстрое и др.' }], statTips: { primary: 'cha', secondary: 'con', tip: 'Харизма — для заклинаний. Телосложение — для концентрации и спасбросков.' } },
+            { id: 'warlock', name: 'Колдун', hitDie: 8, primary: 'Харизма', desc: 'Получил силу от покровителя.', magic: true, cantrips: 2, spells1: 2, skills: ['Магия', 'Обман', 'История', 'Запугивание', 'Расследование', 'Природа', 'Религия'], skillsCount: 2, armor: ['Лёгкие доспехи'], weapons: ['Простое оружие'], tools: [], saves: ['Мудрость', 'Харизма'], features: [{ name: 'Договор покровителя', desc: 'Вы заключили пакт с могущественным существом: Архифея, Исчадия, Великого Древнего и др.' }, { name: 'Мистические тайны', desc: 'Вы знаете 2 заговора и 2 заклинания 1-го уровня. Ячейки восстанавливаются на коротком отдыхе' }], statTips: { primary: 'cha', secondary: 'con', tip: 'Харизма — для заклинаний. Телосложение — для концентрации.' } },
+            { id: 'monk', name: 'Монах', hitDie: 8, primary: 'Ловкость/Мудрость', desc: 'Мастер боевых искусств, использующий ци.', magic: false, skills: ['Акробатика', 'Атлетика', 'История', 'Проницательность', 'Религия', 'Скрытность'], skillsCount: 2, armor: [], weapons: ['Простое оружие', 'Короткие мечи'], tools: ['Один музыкальный инструмент или ремесленный инструмент на выбор'], saves: ['Сила', 'Ловкость'], features: [{ name: 'Боевые искусства', desc: 'Вы можете использовать Ловкость вместо Силы для атак невооружённым ударом и монашеским оружием. Кость урона 1d4' }, { name: 'Невооружённая защита', desc: 'Когда вы без доспехов и щита, ваш КД = 10 + модификатор Ловкости + модификатор Мудрости' }], statTips: { primary: 'dex', secondary: 'wis', tip: 'Ловкость и Мудрость — обе важны для КД, атак и спасбросков. Распределяй поровну.' } },
+            { id: 'druid', name: 'Друид', hitDie: 8, primary: 'Мудрость', desc: 'Жрец природы, способный превращаться в животных.', magic: true, cantrips: 2, spells1: 2, skills: ['Магия', 'Работа с животными', 'Проницательность', 'Медицина', 'Природа', 'Восприятие', 'Религия', 'Выживание'], skillsCount: 2, armor: ['Лёгкие доспехи', 'Средние доспехи', 'Щиты (не металлические)'], weapons: ['Булавы', 'Кинжалы', 'Дротики', 'Посохи', 'Серпы', 'Короткие мечи', 'Копья', 'Скимитары', 'Пращи'], tools: ['Набор травника'], saves: ['Интеллект', 'Мудрость'], features: [{ name: 'Друидический круг', desc: 'На 2 уровне вы выберете круг: Круг земли, Круг луны и др., что даёт дополнительные способности' }, { name: 'Друидический язык', desc: 'Вы знаете секретный язык друидов, понятный только им' }], statTips: { primary: 'wis', secondary: 'con', tip: 'Мудрость — для заклинаний. Телосложение — для концентрации и формы зверя.' } }
         ];
 
         const backgrounds = [
@@ -825,201 +185,40 @@
             { id: 'folkhero', name: 'Народный герой', skills: ['Выживание', 'Работа с животными'], desc: 'Совершил подвиг для простых людей.', tools: ['Ремесленный инструмент (на выбор)'] }
         ];
 
-        // === СПИСКИ ЗАКЛИНАНИЙ ===
         const spells = {
-            bard: {
-                cantrips: [
-                    { name: 'Зловещая насмешка', desc: 'Цель должна преуспеть в спасброске Интеллекта или получить 1d4 психического урона и помеху на следующую атаку' },
-                    { name: 'Свет', desc: 'Предмет излучает яркий свет в радиусе 20 футов и тусклый свет ещё на 20 футов' },
-                    { name: 'Дружба', desc: 'Цель должна преуспеть в спасброске Мудрости или вы получите преимущество на проверки Харизмы против неё' },
-                    { name: 'Минорная иллюзия', desc: 'Создайте звук или изображение объекта в пределах 30 футов' },
-                    { name: 'Послание', desc: 'Вы шепчете сообщение существу в пределах 120 футов, оно может ответить шёпотом' },
-                    { name: 'Пляшущие огоньки', desc: 'Создайте до 4 огней, освещающих область, вы можете перемещать их бонусным действием' }
-                ],
-                level1: [
-                    { name: 'Очарование личности', desc: 'Цель должна преуспеть в спасброске Мудрости или быть очарованной вами 1 час' },
-                    { name: 'Лечащее слово', desc: 'Существо восстанавливает 1d4+модификатор заклинательной характеристики хитов' },
-                    { name: 'Героизм', desc: 'Цель получает иммунитет к испугу и временные хиты, равные вашему модификатору Харизмы' },
-                    { name: 'Обнаружение магии', desc: 'Вы чувствуете присутствие магии в радиусе 30 футов на 10 минут' },
-                    { name: 'Опознание', desc: 'Вы узнаёте свойства и способ использования одного магического предмета' },
-                    { name: 'Громовая волна', desc: 'Существа в радиусе 10 футов должны совершить спасбросок Телосложения или получить 2d8 урона звуком и быть оттолкнутыми' },
-                    { name: 'Исцеление ран', desc: 'Существо восстанавливает 1d8+модификатор заклинательной характеристики хитов' },
-                    { name: 'Невидимость слуги', desc: 'Вы создаёте невидимого слугу, который выполняет простые задачи' }
-                ]
-            },
-            wizard: {
-                cantrips: [
-                    { name: 'Огненный снаряд', desc: 'Создайте огонь в руке и бросьте его: 1d10 урона огнём, цель должна совершить спасбросок Ловкости' },
-                    { name: 'Луч холода', desc: 'Синий луч наносит 1d8 урона холодом и снижает скорость цели на 10 футов до начала вашего следующего хода' },
-                    { name: 'Волшебная рука', desc: 'Призрачная рука может манипулировать предметами, открывать двери и переносить предметы в пределах 30 футов' },
-                    { name: 'Послание', desc: 'Вы шепчете сообщение существу в пределах 120 футов' },
-                    { name: 'Свет', desc: 'Предмет излучает яркий свет в радиусе 20 футов' },
-                    { name: 'Пляшущие огоньки', desc: 'Создайте до 4 огней, освещающих область' },
-                    { name: 'Починка', desc: 'Вы чините один разрыв или трещину в предмете' },
-                    { name: 'Зловещая насмешка', desc: '1d4 психического урона и помеха на следующую атаку цели' }
-                ],
-                level1: [
-                    { name: 'Волшебная стрела', desc: 'Три магических дротика автоматически попадают и наносят 1d4+1 урона силовым полем каждый' },
-                    { name: 'Щит', desc: 'Реакция: +5 к вашему КД до начала вашего следующего хода, включая против триггерной атаки' },
-                    { name: 'Сон', desc: 'Существа с наименьшим количеством текущих хитов в радиусе 20 футов засыпают' },
-                    { name: 'Обнаружение магии', desc: 'Вы чувствуете присутствие магии в радиусе 30 футов' },
-                    { name: 'Опознание', desc: 'Вы узнаёте свойства магического предмета' },
-                    { name: 'Доспехи мага', desc: 'Ваш базовый КД становится 13 + модификатор Ловкости на 8 часов' },
-                    { name: 'Туманный шаг', desc: 'Вы телепортируетесь на 30 футов в видимое вами место' },
-                    { name: 'Плавное падение', desc: 'Вы замедляете падение существа в радиусе 60 футов' },
-                    { name: 'Ложная жизнь', desc: 'Вы получаете 1d4+4 временных хита на 1 час' },
-                    { name: 'Прыжок', desc: 'Утраиваешь прыжковую способность цели на 1 минуту' }
-                ]
-            },
-            cleric: {
-                cantrips: [
-                    { name: 'Устойчивость', desc: 'Цель добавляет 1d4 к одной проверке характеристики по выбору' },
-                    { name: 'Свет', desc: 'Предмет излучает яркий свет в радиусе 20 футов' },
-                    { name: 'Священное пламя', desc: 'Цель должна совершить спасбросок Ловкости или получить 1d8 урона излучением' },
-                    { name: 'Чудотворство', desc: 'Вы создаёте небольшой звук, меняете цвет пламени или создаёте другие мелкие эффекты' },
-                    { name: 'Сопротивление', desc: 'Цель добавляет 1d4 к одному спасброску по выбору' }
-                ],
-                level1: [
-                    { name: 'Лечение ран', desc: 'Существо восстанавливает 1d8+модификатор Мудрости хитов' },
-                    { name: 'Благословение', desc: 'До трёх существ добавляют 1d4 к броскам атаки и спасброскам' },
-                    { name: 'Направление стрелы', desc: 'Вы бросаете священный снаряд, наносящий 1d8+модификатор Мудрости урона излучением' },
-                    { name: 'Убежище', desc: 'Существо не может быть атаковано или выбрано целью враждебных заклинаний' },
-                    { name: 'Щит веры', desc: 'Вы создаёте защитный щит с хитами, равными 2×ваш уровень' },
-                    { name: 'Обнаружение магии', desc: 'Вы чувствуете магию в радиусе 30 футов' },
-                    { name: 'Изгнание нежити', desc: 'Нежить в радиусе 30 футов должна совершить спасбросок Мудрости или быть уничтоженной/обращённой' },
-                    { name: 'Команда', desc: 'Вы отдаёте однословную команду существу, которое должно её выполнить' }
-                ]
-            },
-            warlock: {
-                cantrips: [
-                    { name: 'Потусторонний шепот', desc: 'Луч силового поля наносит 1d10 урона силовым полем цели' },
-                    { name: 'Зловещая насмешка', desc: '1d4 психического урона и помеха на следующую атаку' },
-                    { name: 'Ядовитые брызги', desc: 'Конус яда наносит 1d12 урона ядом целям в пределах 15 футов' },
-                    { name: 'Минорная иллюзия', desc: 'Создайте звук или изображение объекта' },
-                    { name: 'Свет', desc: 'Предмет излучает яркий свет' }
-                ],
-                level1: [
-                    { name: 'Адский укор (Hex)', desc: 'Вы проклинаете цель: ваши атаки по ней наносят дополнительные 1d6 некротического урона' },
-                    { name: 'Чары личности', desc: 'Существо очаровано вами 1 час' },
-                    { name: 'Щит', desc: 'Реакция: +5 к КД до конца хода' },
-                    { name: 'Ложная жизнь', desc: 'Вы получаете 1d4+4 временных хита на 1 час' },
-                    { name: 'Невидимость слуги', desc: 'Вы создаёте невидимого слугу' },
-                    { name: 'Туманный шаг', desc: 'Телепортация на 30 футов' }
-                ]
-            },
-            sorcerer: {
-                cantrips: [
-                    { name: 'Огненный снаряд', desc: 'Бросьте огонь, наносящий 1d10 урона огнём' },
-                    { name: 'Луч холода', desc: 'Синий луч наносит 1d8 урона холодом и замедляет цель' },
-                    { name: 'Свет', desc: 'Предмет излучает яркий свет' },
-                    { name: 'Потусторонний шепот', desc: 'Луч силового поля, 1d10 урона' },
-                    { name: 'Послание', desc: 'Шепчешь сообщение на расстоянии' },
-                    { name: 'Починка', desc: 'Чинишь предмет' }
-                ],
-                level1: [
-                    { name: 'Волшебная стрела', desc: 'Три дротика наносят 1d4+1 урона силовым полем' },
-                    { name: 'Щит', desc: 'Реакция: +5 к КД' },
-                    { name: 'Доспехи мага', desc: 'КД = 13 + мод Лов' },
-                    { name: 'Туманный шаг', desc: 'Телепорт на 30 футов' },
-                    { name: 'Ложная жизнь', desc: 'Временные хиты' },
-                    { name: 'Луч болезни', desc: '1d8 урона ядом' },
-                    { name: 'Волна грома', desc: '2d8 урона звуком' }
-                ]
-            },
-            paladin: {
-                cantrips: [],
-                level1: [
-                    { name: 'Благословение', desc: 'До трёх существ добавляют 1d4 к броскам атаки и спасброскам' },
-                    { name: 'Лечение ран', desc: '1d8+мод хитов' },
-                    { name: 'Кара гнева', desc: 'Следующая атака наносит +2d8 урона излучением' },
-                    { name: 'Щит веры', desc: 'Защитный щит с хитами' },
-                    { name: 'Обнаружение зла и добра', desc: 'Чувствуешь фей, исчадий, нежить' },
-                    { name: 'Героизм', desc: 'Временные хиты и иммунитет к испугу' }
-                ]
-            },
-            ranger: {
-                cantrips: [],
-                level1: [
-                    { name: 'Лечение ран', desc: '1d8+мод хитов' },
-                    { name: 'Охотничья метка', desc: 'Помечаешь врага: +1d6 урона против него' },
-                    { name: 'Туманное облако', desc: 'Облако тумана в радиусе 20 футов' },
-                    { name: 'Долгий шаг', desc: 'Увеличиваешь скорость цели на 10 футов на 1 час' },
-                    { name: 'Обнаружение магии', desc: 'Чувствуешь магию' },
-                    { name: 'Прыжок', desc: 'Утраиваешь прыжковую способность цели' }
-                ]
-            },
-            druid: {
-                cantrips: [
-                    { name: 'Друидство', desc: 'Создаёшь маленький природный эффект: цветок, искра, звук' },
-                    { name: 'Устойчивость', desc: '1d4 к одной проверке характеристики' },
-                    { name: 'Ядовитые брызги', desc: 'Конус яда наносит 1d12 урона ядом' },
-                    { name: 'Произвести пламя', desc: 'Создаёшь огонь в руке: ближний бой или метание' },
-                    { name: 'Сопротивление', desc: '1d4 к спасброску' }
-                ],
-                level1: [
-                    { name: 'Лечение ран', desc: '1d8+мод хитов' },
-                    { name: 'Создание или уничтожение воды', desc: 'Создаёшь 10 галлонов воды или уничтожаешь' },
-                    { name: 'Фаэри файр', desc: 'Подсвечиваешь существ: атаки по ним с преимуществом' },
-                    { name: 'Прыжок', desc: 'Утраиваешь прыжок' },
-                    { name: 'Долгий шаг', desc: '+10 фт скорости' },
-                    { name: 'Разговор с животными', desc: 'Общаешься с животными' },
-                    { name: 'Обнаружение магии', desc: 'Чувствуешь магию' }
-                ]
-            }
+            bard: { cantrips: [{name:'Зловещая насмешка',desc:'Цель должна преуспеть в спасброске Интеллекта или получить 1d4 психического урона и помеху на следующую атаку'},{name:'Свет',desc:'Предмет излучает яркий свет в радиусе 20 футов и тусклый свет ещё на 20 футов'},{name:'Дружба',desc:'Цель должна преуспеть в спасброске Мудрости или вы получите преимущество на проверки Харизмы против неё'},{name:'Минорная иллюзия',desc:'Создайте звук или изображение объекта в пределах 30 футов'},{name:'Послание',desc:'Вы шепчете сообщение существу в пределах 120 футов, оно может ответить шёпотом'},{name:'Пляшущие огоньки',desc:'Создайте до 4 огней, освещающих область, вы можете перемещать их бонусным действием'}], level1: [{name:'Очарование личности',desc:'Цель должна преуспеть в спасброске Мудрости или быть очарованной вами 1 час'},{name:'Лечащее слово',desc:'Существо восстанавливает 1d4+модификатор заклинательной характеристики хитов'},{name:'Героизм',desc:'Цель получает иммунитет к испугу и временные хиты, равные вашему модификатору Харизмы'},{name:'Обнаружение магии',desc:'Вы чувствуете присутствие магии в радиусе 30 футов на 10 минут'},{name:'Опознание',desc:'Вы узнаёте свойства и способ использования одного магического предмета'},{name:'Громовая волна',desc:'Существа в радиусе 10 футов должны совершить спасбросок Телосложения или получить 2d8 урона звуком и быть оттолкнутыми'},{name:'Исцеление ран',desc:'Существо восстанавливает 1d8+модификатор заклинательной характеристики хитов'},{name:'Невидимость слуги',desc:'Вы создаёте невидимого слугу, который выполняет простые задачи'}] },
+            wizard: { cantrips: [{name:'Огненный снаряд',desc:'Создайте огонь в руке и бросьте его: 1d10 урона огнём, цель должна совершить спасбросок Ловкости'},{name:'Луч холода',desc:'Синий луч наносит 1d8 урона холодом и снижает скорость цели на 10 футов до начала вашего следующего хода'},{name:'Волшебная рука',desc:'Призрачная рука может манипулировать предметами, открывать двери и переносить предметы в пределах 30 футов'},{name:'Послание',desc:'Вы шепчете сообщение существу в пределах 120 футов'},{name:'Свет',desc:'Предмет излучает яркий свет в радиусе 20 футов'},{name:'Пляшущие огоньки',desc:'Создайте до 4 огней, освещающих область'},{name:'Починка',desc:'Вы чините один разрыв или трещину в предмете'},{name:'Зловещая насмешка',desc:'1d4 психического урона и помеха на следующую атаку цели'}], level1: [{name:'Волшебная стрела',desc:'Три магических дротика автоматически попадают и наносят 1d4+1 урона силовым полем каждый'},{name:'Щит',desc:'Реакция: +5 к вашему КД до начала вашего следующего хода, включая против триггерной атаки'},{name:'Сон',desc:'Существа с наименьшим количеством текущих хитов в радиусе 20 футов засыпают'},{name:'Обнаружение магии',desc:'Вы чувствуете присутствие магии в радиусе 30 футов'},{name:'Опознание',desc:'Вы узнаёте свойства магического предмета'},{name:'Доспехи мага',desc:'Ваш базовый КД становится 13 + модификатор Ловкости на 8 часов'},{name:'Туманный шаг',desc:'Вы телепортируетесь на 30 футов в видимое вами место'},{name:'Плавное падение',desc:'Вы замедляете падение существа в радиусе 60 футов'},{name:'Ложная жизнь',desc:'Вы получаете 1d4+4 временных хита на 1 час'},{name:'Прыжок',desc:'Утраиваешь прыжковую способность цели на 1 минуту'}] },
+            cleric: { cantrips: [{name:'Устойчивость',desc:'Цель добавляет 1d4 к одной проверке характеристики по выбору'},{name:'Свет',desc:'Предмет излучает яркий свет в радиусе 20 футов'},{name:'Священное пламя',desc:'Цель должна совершить спасбросок Ловкости или получить 1d8 урона излучением'},{name:'Чудотворство',desc:'Вы создаёте небольшой звук, меняете цвет пламени или создаёте другие мелкие эффекты'},{name:'Сопротивление',desc:'Цель добавляет 1d4 к одному спасброску по выбору'}], level1: [{name:'Лечение ран',desc:'Существо восстанавливает 1d8+модификатор Мудрости хитов'},{name:'Благословение',desc:'До трёх существ добавляют 1d4 к броскам атаки и спасброскам'},{name:'Направление стрелы',desc:'Вы бросаете священный снаряд, наносящий 1d8+модификатор Мудрости урона излучением'},{name:'Убежище',desc:'Существо не может быть атаковано или выбрано целью враждебных заклинаний'},{name:'Щит веры',desc:'Вы создаёте защитный щит с хитами, равными 2×ваш уровень'},{name:'Обнаружение магии',desc:'Вы чувствуете магию в радиусе 30 футов'},{name:'Изгнание нежити',desc:'Нежить в радиусе 30 футов должна совершить спасбросок Мудрости или быть уничтоженной/обращённой'},{name:'Команда',desc:'Вы отдаёте однословную команду существу, которое должно её выполнить'}] },
+            warlock: { cantrips: [{name:'Потусторонний шепот',desc:'Луч силового поля наносит 1d10 урона силовым полем цели'},{name:'Зловещая насмешка',desc:'1d4 психического урона и помеха на следующую атаку'},{name:'Ядовитые брызги',desc:'Конус яда наносит 1d12 урона ядом целям в пределах 15 футов'},{name:'Минорная иллюзия',desc:'Создайте звук или изображение объекта'},{name:'Свет',desc:'Предмет излучает яркий свет'}], level1: [{name:'Адский укор (Hex)',desc:'Вы проклинаете цель: ваши атаки по ней наносят дополнительные 1d6 некротического урона'},{name:'Чары личности',desc:'Существо очаровано вами 1 час'},{name:'Щит',desc:'Реакция: +5 к КД до конца хода'},{name:'Ложная жизнь',desc:'Вы получаете 1d4+4 временных хита на 1 час'},{name:'Невидимость слуги',desc:'Вы создаёте невидимого слугу'},{name:'Туманный шаг',desc:'Телепортация на 30 футов'}] },
+            sorcerer: { cantrips: [{name:'Огненный снаряд',desc:'Бросьте огонь, наносящий 1d10 урона огнём'},{name:'Луч холода',desc:'Синий луч наносит 1d8 урона холодом и замедляет цель'},{name:'Свет',desc:'Предмет излучает яркий свет'},{name:'Потусторонний шепот',desc:'Луч силового поля, 1d10 урона'},{name:'Послание',desc:'Шепчешь сообщение на расстоянии'},{name:'Починка',desc:'Чинишь предмет'}], level1: [{name:'Волшебная стрела',desc:'Три дротика наносят 1d4+1 урона силовым полем'},{name:'Щит',desc:'Реакция: +5 к КД'},{name:'Доспехи мага',desc:'КД = 13 + мод Лов'},{name:'Туманный шаг',desc:'Телепорт на 30 футов'},{name:'Ложная жизнь',desc:'Временные хиты'},{name:'Луч болезни',desc:'1d8 урона ядом'},{name:'Волна грома',desc:'2d8 урона звуком'}] },
+            paladin: { cantrips: [], level1: [{name:'Благословение',desc:'До трёх существ добавляют 1d4 к броскам атаки и спасброскам'},{name:'Лечение ран',desc:'1d8+мод хитов'},{name:'Кара гнева',desc:'Следующая атака наносит +2d8 урона излучением'},{name:'Щит веры',desc:'Защитный щит с хитами'},{name:'Обнаружение зла и добра',desc:'Чувствуешь фей, исчадий, нежить'},{name:'Героизм',desc:'Временные хиты и иммунитет к испугу'}] },
+            ranger: { cantrips: [], level1: [{name:'Лечение ран',desc:'1d8+мод хитов'},{name:'Охотничья метка',desc:'Помечаешь врага: +1d6 урона против него'},{name:'Туманное облако',desc:'Облако тумана в радиусе 20 футов'},{name:'Долгий шаг',desc:'Увеличиваешь скорость цели на 10 футов на 1 час'},{name:'Обнаружение магии',desc:'Чувствуешь магию'},{name:'Прыжок',desc:'Утраиваешь прыжковую способность цели'}] },
+            druid: { cantrips: [{name:'Друидство',desc:'Создаёшь маленький природный эффект: цветок, искра, звук'},{name:'Устойчивость',desc:'1d4 к одной проверке характеристики'},{name:'Ядовитые брызги',desc:'Конус яда наносит 1d12 урона ядом'},{name:'Произвести пламя',desc:'Создаёшь огонь в руке: ближний бой или метание'},{name:'Сопротивление',desc:'1d4 к спасброску'}], level1: [{name:'Лечение ран',desc:'1d8+мод хитов'},{name:'Создание или уничтожение воды',desc:'Создаёшь 10 галлонов воды или уничтожаешь'},{name:'Фаэри файр',desc:'Подсвечиваешь существ: атаки по ним с преимуществом'},{name:'Прыжок',desc:'Утраиваешь прыжок'},{name:'Долгий шаг',desc:'+10 фт скорости'},{name:'Разговор с животными',desc:'Общаешься с животными'},{name:'Обнаружение магии',desc:'Чувствуешь магию'}] }
         };
 
-        // === СОСТОЯНИЕ ===
         let currentStep = 1;
-        let character = {
-            name: '',
-            race: null,
-            class: null,
-            background: null,
-            stats: { str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 },
-            spells: { cantrips: [], level1: [] },
-            skills: []
-        };
-
+        let character = { name: '', race: null, class: null, background: null, stats: { str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 }, spells: { cantrips: [], level1: [] }, skills: [] };
         const statNames = { str: 'Сила', dex: 'Ловкость', con: 'Телосложение', int: 'Интеллект', wis: 'Мудрость', cha: 'Харизма' };
         const statKeys = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 
-        // === POINT BUY СИСТЕМА ===
-        function getPointCost(value) {
-            if (value <= 13) return value - 8;
-            if (value === 14) return 7;
-            if (value === 15) return 9;
-            return 0;
-        }
+        function saveToLocalStorage() { localStorage.setItem('dnd_char', JSON.stringify(character)); localStorage.setItem('dnd_step', currentStep); }
+        function loadFromLocalStorage() { const savedChar = localStorage.getItem('dnd_char'); const savedStep = localStorage.getItem('dnd_step'); if (savedChar) { character = JSON.parse(savedChar); if (savedStep) currentStep = parseInt(savedStep); } }
+        function clearSave() { localStorage.removeItem('dnd_char'); localStorage.removeItem('dnd_step'); location.reload(); }
 
-        function getTotalPointsUsed() {
-            let total = 0;
-            for (let key in character.stats) {
-                total += getPointCost(character.stats[key]);
-            }
-            return total;
-        }
+        function getPointCost(value) { if (value <= 13) return value - 8; if (value === 14) return 7; if (value === 15) return 9; return 0; }
+        function getTotalPointsUsed() { let t = 0; for (let k in character.stats) t += getPointCost(character.stats[k]); return t; }
+        function getPointsRemaining() { return 27 - getTotalPointsUsed(); }
 
-        function getPointsRemaining() {
-            return 27 - getTotalPointsUsed();
-        }
-
-        // === НАВИГАЦИЯ ===
-        function getTotalSteps() {
-            return character.class?.magic ? 5 : 4;
-        }
-
-        function getCurrentDisplayStep() {
-            if (!character.class?.magic && currentStep >= 5) return currentStep - 1;
-            return currentStep;
-        }
+        function getTotalSteps() { return character.class?.magic ? 5 : 4; }
+        function getCurrentDisplayStep() { if (!character.class?.magic && currentStep >= 5) return currentStep - 1; return currentStep; }
 
         function render() {
+            saveToLocalStorage();
             document.getElementById('step-indicator').innerText = getCurrentDisplayStep();
             document.getElementById('total-steps').innerText = getTotalSteps();
             const container = document.getElementById('app-container');
             const btnBack = document.getElementById('btn-back');
             const btnNext = document.getElementById('btn-next');
-
             btnBack.classList.toggle('hidden', currentStep === 1);
             btnNext.innerText = currentStep === (character.class?.magic ? 5 : 4) ? '✅ Завершить' : 'Далее →';
 
@@ -1030,102 +229,12 @@
             else if (currentStep === 5) renderStep5(container);
         }
 
-        function renderStep1(container) {
-            container.innerHTML = `
-                <h2 class="text-3xl font-bold text-amber-500 mb-6 fantasy-title animate-fade-in">🌟 Шаг 1: Выбери расу</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    ${races.map(r => `
-                        <div class="card p-5 rounded-xl ${character.race?.id === r.id ? 'selected' : ''} animate-fade-in" onclick="selectRace('${r.id}')">
-                            <div class="flex items-center gap-4 mb-3">
-                                <img src="${raceIcons[r.id]}" alt="${r.name}" class="race-icon" onerror="handleImageError(this, '${raceEmojis[r.id]}', 'race')">
-                                <div>
-                                    <h3 class="text-xl font-bold text-amber-400">${r.name}</h3>
-                                    <p class="text-xs text-blue-400">Скорость: ${r.speed} фт</p>
-                                </div>
-                            </div>
-                            <p class="text-sm text-gray-300 mb-3">${r.desc}</p>
-                            <div class="text-xs space-y-1">
-                                ${r.abilities.map(a => `<div class="text-purple-300">• ${a.name}</div>`).join('')}
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-        }
-
-        function renderStep2(container) {
-            container.innerHTML = `
-                <h2 class="text-3xl font-bold text-amber-500 mb-6 fantasy-title animate-fade-in">⚔️ Шаг 2: Выбери класс</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    ${classes.map(c => `
-                        <div class="card p-5 rounded-xl ${character.class?.id === c.id ? 'selected' : ''} animate-fade-in" onclick="selectClass('${c.id}')">
-                            <div class="flex items-center gap-4 mb-3">
-                                <img src="${classIcons[c.id]}" alt="${c.name}" class="class-icon" onerror="handleImageError(this, '${classEmojis[c.id]}', 'class')">
-                                <div class="flex-1">
-                                    <div class="flex justify-between items-center">
-                                        <h3 class="text-xl font-bold text-amber-400">${c.name}</h3>
-                                        <span class="text-xs ${c.magic ? 'bg-purple-600' : 'bg-gray-600'} px-2 py-1 rounded font-bold">${c.magic ? '✨ Маг' : '⚔️ Воин'}</span>
-                                    </div>
-                                    <p class="text-xs text-gray-400 mt-1">Кость хитов: <b class="text-amber-500">d${c.hitDie}</b></p>
-                                </div>
-                            </div>
-                            <p class="text-sm text-gray-300 mb-2">${c.desc}</p>
-                            <div class="text-xs text-gray-400 mb-2">
-                                Главная характеристика: <b class="text-amber-500">${c.primary}</b>
-                            </div>
-                            ${c.magic ? `<div class="text-xs text-purple-400">✨ ${c.cantrips} заговоров + ${c.spells1} заклинаний 1-го уровня</div>` : ''}
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-        }
-
-        function renderStep3(container) {
-            container.innerHTML = `
-                <h2 class="text-3xl font-bold text-amber-500 mb-6 fantasy-title animate-fade-in">📜 Шаг 3: Выбери происхождение</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    ${backgrounds.map(b => `
-                        <div class="card p-5 rounded-xl ${character.background?.id === b.id ? 'selected' : ''} animate-fade-in" onclick="selectBackground('${b.id}')">
-                            <h3 class="text-xl font-bold text-amber-400 mb-2">${b.name}</h3>
-                            <p class="text-sm text-gray-300 mb-3">${b.desc}</p>
-                            <div class="text-sm">
-                                <span class="text-gray-400">Навыки:</span> <b class="text-amber-500">${b.skills.join(', ')}</b>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-        }
-
+        function renderStep1(container) { container.innerHTML = `<h2 class="text-3xl font-bold text-amber-500 mb-6 fantasy-title animate-fade-in">🌟 Шаг 1: Выбери расу</h2><div class="grid grid-cols-1 md:grid-cols-3 gap-4">${races.map(r => `<div class="card p-5 rounded-xl ${character.race?.id === r.id ? 'selected' : ''} animate-fade-in" onclick="selectRace('${r.id}')"><div class="flex items-center gap-4 mb-3"><img src="${raceIcons[r.id]}" alt="${r.name}" class="race-icon" onerror="handleImageError(this, '${raceEmojis[r.id]}', 'race')"><div><h3 class="text-xl font-bold text-amber-400">${r.name}</h3><p class="text-xs text-blue-400">Скорость: ${r.speed} фт</p></div></div><p class="text-sm text-gray-300 mb-3">${r.desc}</p><div class="text-xs space-y-1">${r.abilities.map(a => `<div class="text-purple-300">• ${a.name}</div>`).join('')}</div></div>`).join('')}</div>`; }
+        function renderStep2(container) { container.innerHTML = `<h2 class="text-3xl font-bold text-amber-500 mb-6 fantasy-title animate-fade-in">⚔️ Шаг 2: Выбери класс</h2><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${classes.map(c => `<div class="card p-5 rounded-xl ${character.class?.id === c.id ? 'selected' : ''} animate-fade-in" onclick="selectClass('${c.id}')"><div class="flex items-center gap-4 mb-3"><img src="${classIcons[c.id]}" alt="${c.name}" class="class-icon" onerror="handleImageError(this, '${classEmojis[c.id]}', 'class')"><div class="flex-1"><div class="flex justify-between items-center"><h3 class="text-xl font-bold text-amber-400">${c.name}</h3><span class="text-xs ${c.magic ? 'bg-purple-600' : 'bg-gray-600'} px-2 py-1 rounded font-bold">${c.magic ? '✨ Маг' : '⚔️ Воин'}</span></div><p class="text-xs text-gray-400 mt-1">Кость хитов: <b class="text-amber-500">d${c.hitDie}</b></p></div></div><p class="text-sm text-gray-300 mb-2">${c.desc}</p><div class="text-xs text-gray-400 mb-2">Главная: <b class="text-amber-500">${c.primary}</b></div>${c.magic ? `<div class="text-xs text-purple-400">✨ ${c.cantrips} заговоров + ${c.spells1} заклинаний</div>` : ''}</div>`).join('')}</div>`; }
+        function renderStep3(container) { container.innerHTML = `<h2 class="text-3xl font-bold text-amber-500 mb-6 fantasy-title animate-fade-in"> Шаг 3: Происхождение</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-4">${backgrounds.map(b => `<div class="card p-5 rounded-xl ${character.background?.id === b.id ? 'selected' : ''} animate-fade-in" onclick="selectBackground('${b.id}')"><h3 class="text-xl font-bold text-amber-400 mb-2">${b.name}</h3><p class="text-sm text-gray-300 mb-3">${b.desc}</p><div class="text-sm"><span class="text-gray-400">Навыки:</span> <b class="text-amber-500">${b.skills.join(', ')}</b></div></div>`).join('')}</div>`; }
         function renderStep4(container) {
-            let pointsUsed = getTotalPointsUsed();
             let pointsRemaining = getPointsRemaining();
-            
-            // Подсказки по статам для класса
-            let statTipsHtml = '';
-            if (character.class?.statTips) {
-                const tips = character.class.statTips;
-                const primaryName = statNames[tips.primary];
-                const secondaryName = statNames[tips.secondary];
-                statTipsHtml = `
-                    <div class="tip-banner">
-                        <div class="text-sm">
-                            <span class="tip-primary">🎯 Главная:</span> ${primaryName} — для атак и заклинаний • 
-                            <span class="tip-secondary">⚡ Вторичная:</span> ${secondaryName}
-                            <div class="text-xs text-gray-400 mt-1">${tips.tip}</div>
-                        </div>
-                    </div>
-                `;
-            } else {
-                statTipsHtml = `
-                    <div class="tip-banner">
-                        <div class="text-sm text-gray-300">
-                            💡 <b>Совет:</b> Сначала выбери класс, чтобы увидеть рекомендации по характеристикам.
-                        </div>
-                    </div>
-                `;
-            }
-
+            let statTipsHtml = character.class?.statTips ? `<div class="tip-banner"><div class="text-sm"><span class="tip-primary"> Главная:</span> ${statNames[character.class.statTips.primary]} • <span class="tip-secondary"> Вторичная:</span> ${statNames[character.class.statTips.secondary]}</div><div class="text-xs text-gray-400 mt-1">${character.class.statTips.tip}</div></div>` : `<div class="tip-banner"><div class="text-sm text-gray-300">💡 Выбери класс для рекомендаций.</div></div>`;
             let statsHtml = '';
             for (let key of statKeys) {
                 let base = character.stats[key];
@@ -1134,502 +243,255 @@
                 let mod = Math.floor((final - 10) / 2);
                 let modStr = mod >= 0 ? `+${mod}` : mod;
                 let cost = getPointCost(base);
-                
-                // Подсветка рекомендуемых статов
-                const isRecommended = character.class?.statTips && (key === character.class.statTips.primary || key === character.class.statTips.secondary);
-                const isPrimary = character.class?.statTips?.primary === key;
-                const cardClass = isRecommended ? 'stat-recommended' : '';
-                const borderClass = isPrimary ? 'stat-primary' : '';
-
-                statsHtml += `
-                    <div class="bg-gray-900/80 p-4 rounded-xl border border-gray-700 ${cardClass} ${borderClass}">
-                        <div class="flex items-center justify-between">
-                            <div class="flex-1">
-                                <div class="font-bold text-amber-500 text-lg flex items-center gap-2">
-                                    ${statNames[key]}
-                                    ${isPrimary ? '<span class="text-xs bg-amber-600 text-black px-2 py-0.5 rounded font-bold">ГЛАВНАЯ</span>' : ''}
-                                    ${isRecommended && !isPrimary ? '<span class="text-xs bg-blue-600 text-white px-2 py-0.5 rounded font-bold">ВАЖНО</span>' : ''}
-                                </div>
-                                <div class="text-xs text-gray-500 mt-1">База: ${base} ${bonus > 0 ? `<span class="text-purple-400">+ ${bonus} (раса)</span> = <span class="text-amber-400">${final}</span>` : ''} • Стоимость: ${cost} очк.</div>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <button class="stat-btn" onclick="changeStat('${key}', -1)" ${base <= 8 ? 'disabled' : ''}>−</button>
-                                <span class="text-3xl font-bold w-12 text-center text-amber-400">${final}</span>
-                                <button class="stat-btn" onclick="changeStat('${key}', 1)" ${base >= 15 || pointsRemaining < (base >= 13 ? 2 : 1) ? 'disabled' : ''}>+</button>
-                            </div>
-                            <div class="w-24 text-right">
-                                <div class="text-xs text-gray-400">Модификатор</div>
-                                <div class="text-2xl font-bold ${mod >= 0 ? 'text-green-400' : 'text-red-400'}">${modStr}</div>
-                            </div>
-                        </div>
-                    </div>
-                `;
+                const isRec = character.class?.statTips && (key === character.class.statTips.primary || key === character.class.statTips.secondary);
+                const isPri = character.class?.statTips?.primary === key;
+                statsHtml += `<div class="bg-gray-900/80 p-4 rounded-xl border border-gray-700 ${isRec ? 'stat-recommended' : ''} ${isPri ? 'stat-primary' : ''} stat-block"><div class="flex items-center justify-between flex-wrap md:flex-nowrap gap-3"><div class="flex-1 min-w-0"><div class="font-bold text-amber-500 text-lg flex items-center gap-2 flex-wrap">${statNames[key]} ${isPri ? '<span class="text-xs bg-amber-600 text-black px-2 py-0.5 rounded font-bold">ГЛАВНАЯ</span>' : ''} ${isRec && !isPri ? '<span class="text-xs bg-blue-600 text-white px-2 py-0.5 rounded font-bold">ВАЖНО</span>' : ''}</div><div class="text-xs text-gray-500 mt-1">База: ${base} ${bonus > 0 ? `<span class="text-purple-400">+ ${bonus}</span> = <span class="text-amber-400">${final}</span>` : ''} • Стоимость: ${cost}</div></div><div class="flex items-center gap-3"><button class="stat-btn" onclick="changeStat('${key}', -1)" ${base <= 8 ? 'disabled' : ''}>−</button><span class="text-3xl font-bold w-12 text-center text-amber-400 stat-value">${final}</span><button class="stat-btn" onclick="changeStat('${key}', 1)" ${base >= 15 || pointsRemaining < (base >= 13 ? 2 : 1) ? 'disabled' : ''}>+</button></div><div class="w-24 text-right"><div class="text-xs text-gray-400">Мод</div><div class="text-2xl font-bold ${mod >= 0 ? 'text-green-400' : 'text-red-400'} stat-modifier">${modStr}</div></div></div></div>`;
             }
-            container.innerHTML = `
-                <h2 class="text-3xl font-bold text-amber-500 mb-4 fantasy-title">📊 Шаг 4: Характеристики (Point Buy)</h2>
-                ${statTipsHtml}
-                <div class="mb-6 text-center">
-                    <div class="points-counter text-lg">Осталось очков: ${pointsRemaining} / 27</div>
-                    <p class="text-xs text-gray-400 mt-2">Старт: 8 во всех. Стоимость 8→13 = 1 очко/пункт, 14→15 = 2 очка/пункт</p>
-                </div>
-                <div class="space-y-3">${statsHtml}</div>
-            `;
+            container.innerHTML = `<h2 class="text-3xl font-bold text-amber-500 mb-4 fantasy-title">📊 Характеристики (Point Buy)</h2>${statTipsHtml}<div class="mb-6 text-center"><div class="points-counter text-lg">Осталось очков: ${pointsRemaining} / 27</div></div><div class="space-y-3">${statsHtml}</div>`;
         }
-
         function renderStep5(container) {
-            const classSpells = spells[character.class.id];
-            if (!classSpells) {
-                container.innerHTML = `<p class="text-gray-400">Заклинания для этого класса пока не добавлены.</p>`;
-                return;
-            }
-
-            const cantripsHtml = classSpells.cantrips.map(s => `
-                <div class="card p-4 rounded-xl ${character.spells.cantrips.includes(s.name) ? 'selected' : ''}" onclick="toggleSpell('cantrips', '${s.name}')">
-                    <div class="flex justify-between items-start">
-                        <div class="flex-1">
-                            <span class="spell-tag cantrip">Заговор</span>
-                            <span class="font-bold text-lg text-amber-400">${s.name}</span>
-                            <p class="text-xs text-gray-400 mt-2">${s.desc}</p>
-                        </div>
-                        ${character.spells.cantrips.includes(s.name) ? '<span class="text-amber-500 text-3xl">✓</span>' : ''}
-                    </div>
-                </div>
-            `).join('');
-
-            const level1Html = classSpells.level1.map(s => `
-                <div class="card p-4 rounded-xl ${character.spells.level1.includes(s.name) ? 'selected' : ''}" onclick="toggleSpell('level1', '${s.name}')">
-                    <div class="flex justify-between items-start">
-                        <div class="flex-1">
-                            <span class="spell-tag level1">1-й уровень</span>
-                            <span class="font-bold text-lg text-amber-400">${s.name}</span>
-                            <p class="text-xs text-gray-400 mt-2">${s.desc}</p>
-                        </div>
-                        ${character.spells.level1.includes(s.name) ? '<span class="text-amber-500 text-3xl">✓</span>' : ''}
-                    </div>
-                </div>
-            `).join('');
-
-            container.innerHTML = `
-                <h2 class="text-3xl font-bold text-amber-500 mb-4 fantasy-title">✨ Шаг 5: Заклинания (${character.class.name})</h2>
-                <p class="text-sm text-gray-400 mb-6">Выбери <b class="text-amber-400">${character.class.cantrips} заговоров</b> и <b class="text-amber-400">${character.class.spells1} заклинаний 1-го уровня</b>.</p>
-                
-                ${classSpells.cantrips.length > 0 ? `
-                    <h3 class="text-xl font-bold text-purple-400 mb-3 mt-4">🔮 Заговоры (${character.spells.cantrips.length}/${character.class.cantrips})</h3>
-                    <div class="space-y-3 mb-6">${cantripsHtml}</div>
-                ` : '<p class="text-gray-500 italic mb-4">Этот класс не имеет заговоров.</p>'}
-                
-                <h3 class="text-xl font-bold text-blue-400 mb-3">📜 Заклинания 1-го уровня (${character.spells.level1.length}/${character.class.spells1})</h3>
-                <div class="space-y-3">${level1Html}</div>
-            `;
+            const cs = spells[character.class.id]; if (!cs) return;
+            const cHtml = cs.cantrips.map(s => `<div class="card p-4 rounded-xl ${character.spells.cantrips.includes(s.name) ? 'selected' : ''}" onclick="toggleSpell('cantrips', '${s.name}')"><div class="flex justify-between items-start"><div class="flex-1"><span class="spell-tag cantrip">Заговор</span><span class="font-bold text-lg text-amber-400">${s.name}</span><p class="text-xs text-gray-400 mt-2">${s.desc}</p></div>${character.spells.cantrips.includes(s.name) ? '<span class="text-amber-500 text-3xl">✓</span>' : ''}</div></div>`).join('');
+            const lHtml = cs.level1.map(s => `<div class="card p-4 rounded-xl ${character.spells.level1.includes(s.name) ? 'selected' : ''}" onclick="toggleSpell('level1', '${s.name}')"><div class="flex justify-between items-start"><div class="flex-1"><span class="spell-tag level1">1-й уровень</span><span class="font-bold text-lg text-amber-400">${s.name}</span><p class="text-xs text-gray-400 mt-2">${s.desc}</p></div>${character.spells.level1.includes(s.name) ? '<span class="text-amber-500 text-3xl">✓</span>' : ''}</div></div>`).join('');
+            container.innerHTML = `<h2 class="text-3xl font-bold text-amber-500 mb-4 fantasy-title">✨ Заклинания</h2><p class="text-sm text-gray-400 mb-6">Выбери <b class="text-amber-400">${character.class.cantrips} заговоров</b> и <b class="text-amber-400">${character.class.spells1} заклинаний</b>.</p>${cs.cantrips.length > 0 ? `<h3 class="text-xl font-bold text-purple-400 mb-3 mt-4">🔮 Заговоры (${character.spells.cantrips.length}/${character.class.cantrips})</h3><div class="space-y-3 mb-6">${cHtml}</div>` : ''}<h3 class="text-xl font-bold text-blue-400 mb-3"> 1-й уровень (${character.spells.level1.length}/${character.class.spells1})</h3><div class="space-y-3">${lHtml}</div>`;
         }
 
-        // === ДЕЙСТВИЯ ===
+        function handleImageError(img, emoji, type) { img.style.display = 'none'; const p = document.createElement('div'); p.className = type === 'class' ? 'icon-placeholder' : 'race-icon-placeholder'; p.textContent = emoji; img.parentNode.insertBefore(p, img.nextSibling); }
         function selectRace(id) { character.race = races.find(r => r.id === id); render(); }
-        function selectClass(id) { 
-            character.class = classes.find(c => c.id === id); 
-            character.spells = { cantrips: [], level1: [] };
-            character.skills = [];
-            render(); 
-        }
+        function selectClass(id) { character.class = classes.find(c => c.id === id); character.spells = { cantrips: [], level1: [] }; render(); }
         function selectBackground(id) { character.background = backgrounds.find(b => b.id === id); render(); }
-
-        function changeStat(stat, delta) {
-            let newVal = character.stats[stat] + delta;
-            if (newVal >= 8 && newVal <= 15) {
-                let newPointsUsed = getTotalPointsUsed() - getPointCost(character.stats[stat]) + getPointCost(newVal);
-                if (newPointsUsed <= 27) {
-                    character.stats[stat] = newVal;
-                    render();
-                }
-            }
-        }
-
-        function toggleSpell(level, spellName) {
-            const max = character.class[level === 'cantrips' ? 'cantrips' : 'spells1'];
-            const arr = character.spells[level];
-            const idx = arr.indexOf(spellName);
-            if (idx > -1) {
-                arr.splice(idx, 1);
-            } else if (arr.length < max) {
-                arr.push(spellName);
-            } else {
-                alert(`Максимум ${max} заклинаний этого типа!`);
-            }
-            render();
-        }
-
+        function changeStat(stat, delta) { let newVal = character.stats[stat] + delta; if (newVal >= 8 && newVal <= 15) { let newUsed = getTotalPointsUsed() - getPointCost(character.stats[stat]) + getPointCost(newVal); if (newUsed <= 27) { character.stats[stat] = newVal; render(); } } }
+        function toggleSpell(level, name) { const max = character.class[level === 'cantrips' ? 'cantrips' : 'spells1']; const arr = character.spells[level]; const idx = arr.indexOf(name); if (idx > -1) arr.splice(idx, 1); else if (arr.length < max) arr.push(name); else alert(`Максимум ${max}!`); render(); }
         function nextStep() {
-            if (currentStep === 1 && !character.race) return alert('Сначала выбери расу!');
-            if (currentStep === 2 && !character.class) return alert('Сначала выбери класс!');
-            if (currentStep === 3 && !character.background) return alert('Сначала выбери происхождение!');
-            
-            const maxStep = character.class?.magic ? 5 : 4;
-            
-            if (currentStep === 4 && getPointsRemaining() > 0) {
-                if (!confirm(`У тебя осталось ${getPointsRemaining()} очков. Использовать не все очки?`)) return;
-            }
-            
+            if (currentStep === 1 && !character.race) return alert('Выбери расу!');
+            if (currentStep === 2 && !character.class) return alert('Выбери класс!');
+            if (currentStep === 3 && !character.background) return alert('Выбери происхождение!');
+            const max = character.class?.magic ? 5 : 4;
+            if (currentStep === 4 && getPointsRemaining() > 0 && !confirm(`Осталось ${getPointsRemaining()} очков. Продолжить?`)) return;
             if (currentStep === 5) {
-                if (character.spells.cantrips.length !== character.class.cantrips) return alert(`Выбери ровно ${character.class.cantrips} заговоров!`);
-                if (character.spells.level1.length !== character.class.spells1) return alert(`Выбери ровно ${character.class.spells1} заклинаний 1-го уровня!`);
+                if (character.spells.cantrips.length !== character.class.cantrips) return alert(`Выбери ${character.class.cantrips} заговоров!`);
+                if (character.spells.level1.length !== character.class.spells1) return alert(`Выбери ${character.class.spells1} заклинаний!`);
             }
-            
-            if (currentStep < maxStep) {
-                currentStep++;
-                render();
-            } else {
-                showFinalSheet();
-            }
+            if (currentStep < max) { currentStep++; render(); } else showFinalSheet();
         }
-
-        function prevStep() {
-            if (currentStep > 1) {
-                currentStep--;
-                render();
-            }
-        }
+        function prevStep() { if (currentStep > 1) { currentStep--; render(); } }
 
         function showFinalSheet() {
             const container = document.getElementById('app-container');
             document.getElementById('btn-back').classList.remove('hidden');
-            document.getElementById('pdf-btn').classList.remove('hidden');
-            document.getElementById('btn-next').innerText = '🔄 Начать заново';
+            document.getElementById('btn-next').innerText = '🔄 Заново';
             document.getElementById('btn-next').onclick = () => location.reload();
+
+            let dexMod = Math.floor((character.stats.dex + (character.race?.bonus.dex || 0) - 10) / 2);
+            let conMod = Math.floor((character.stats.con + (character.race?.bonus.con || 0) - 10) / 2);
+            let wisMod = Math.floor((character.stats.wis + (character.race?.bonus.wis || 0) - 10) / 2);
+            let ac = 10 + dexMod;
+            if (character.class.id === 'barbarian') ac = 10 + dexMod + conMod;
+            if (character.class.id === 'monk') ac = 10 + dexMod + wisMod;
+            let hp = character.class.hitDie + conMod;
 
             let statsList = '';
             for (let key in character.stats) {
                 let final = character.stats[key] + (character.race ? (character.race.bonus[key] || 0) : 0);
                 let mod = Math.floor((final - 10) / 2);
-                let modStr = mod >= 0 ? `+${mod}` : mod;
-                statsList += `<div class="flex justify-between border-b border-gray-700 py-2"><span>${statNames[key]}</span> <span class="font-bold text-amber-400">${final} (<span class="${mod >= 0 ? 'text-green-400' : 'text-red-400'}">${modStr}</span>)</span></div>`;
+                statsList += `<div class="flex justify-between border-b border-gray-700 py-2"><span>${statNames[key]}</span> <span class="font-bold text-amber-400">${final} (${mod >= 0 ? '+' : ''}${mod})</span></div>`;
             }
-
-            // Расчёт КД, инициативы, хитов, скорости
-            let dexMod = Math.floor((character.stats.dex + (character.race?.bonus.dex || 0) - 10) / 2);
-            let conMod = Math.floor((character.stats.con + (character.race?.bonus.con || 0) - 10) / 2);
-            let wisMod = Math.floor((character.stats.wis + (character.race?.bonus.wis || 0) - 10) / 2);
-
-            let ac = 10 + dexMod;
-            if (character.class.id === 'barbarian') ac = 10 + dexMod + conMod;
-            if (character.class.id === 'monk') ac = 10 + dexMod + wisMod;
-
-            let initiative = dexMod;
-            let hp = character.class.hitDie + conMod;
-            let speed = character.race.speed;
 
             let spellsList = '';
             if (character.class?.magic && character.spells.cantrips.length > 0) {
-                const classSpells = spells[character.class.id];
-                let cantripsDesc = character.spells.cantrips.map(spellName => {
-                    const spell = classSpells.cantrips.find(s => s.name === spellName);
-                    return spell ? `<div class="desc-box"><b class="text-purple-400">${spell.name}:</b> ${spell.desc}</div>` : '';
-                }).join('');
-                
-                let level1Desc = character.spells.level1.map(spellName => {
-                    const spell = classSpells.level1.find(s => s.name === spellName);
-                    return spell ? `<div class="desc-box"><b class="text-blue-400">${spell.name}:</b> ${spell.desc}</div>` : '';
-                }).join('');
-                
-                spellsList = `
-                    <div class="mt-6 pt-6 border-t border-amber-600/30">
-                        <div class="font-bold text-purple-400 mb-3 text-lg">✨ Заговоры:</div>
-                        ${cantripsDesc}
-                        <div class="font-bold text-blue-400 mb-3 mt-4 text-lg">📜 Заклинания 1-го уровня:</div>
-                        ${level1Desc}
-                    </div>
-                `;
+                const cs = spells[character.class.id];
+                spellsList = `<div class="mt-6 pt-6 border-t border-amber-600/30"><div class="font-bold text-purple-400 mb-3">✨ Заговоры:</div>${character.spells.cantrips.map(n => `<div class="desc-box"><b>${n}:</b> ${cs.cantrips.find(s=>s.name===n)?.desc}</div>`).join('')}<div class="font-bold text-blue-400 mb-3 mt-4"> 1-й уровень:</div>${character.spells.level1.map(n => `<div class="desc-box"><b>${n}:</b> ${cs.level1.find(s=>s.name===n)?.desc}</div>`).join('')}</div>`;
             }
 
-            // Владения
-            let proficienciesHtml = `
-                <div class="mt-6 pt-6 border-t border-amber-600/30">
-                    <div class="font-bold text-amber-400 mb-3 text-lg">🛡️ Владения:</div>
-                    <div class="text-sm space-y-2">
-                        <div><span class="text-gray-400">Доспехи:</span> <span class="text-gray-300">${character.class.armor.length > 0 ? character.class.armor.join(', ') : 'Нет'}</span></div>
-                        <div><span class="text-gray-400">Оружие:</span> <span class="text-gray-300">${character.class.weapons.join(', ')}</span></div>
-                        ${character.class.tools.length > 0 ? `<div><span class="text-gray-400">Инструменты:</span> <span class="text-gray-300">${character.class.tools.join(', ')}</span></div>` : ''}
-                        <div><span class="text-gray-400">Спасброски:</span> <span class="text-gray-300">${character.class.saves.join(', ')}</span></div>
-                        <div><span class="text-gray-400">Навыки:</span> <span class="text-gray-300">${character.class.skills.length > 0 ? character.class.skills.join(', ') : 'Нет'} (выбрать ${character.class.skillsCount})</span></div>
-                    </div>
-                </div>
-            `;
-
-            // Расовые способности с описаниями
-            let racialAbilitiesHtml = `
-                <div class="mt-6 pt-6 border-t border-amber-600/30">
-                    <div class="font-bold text-purple-400 mb-3 text-lg">🌟 Расовые способности:</div>
-                    ${character.race.abilities.map(a => `
-                        <div class="desc-box"><b class="text-purple-400">${a.name}:</b> <span class="text-gray-300">${a.desc}</span></div>
-                    `).join('')}
-                </div>
-            `;
-
-            // Особенности класса с описаниями
-            let classFeaturesHtml = `
-                <div class="mt-6 pt-6 border-t border-amber-600/30">
-                    <div class="font-bold text-amber-400 mb-3 text-lg">⚔️ Особенности класса:</div>
-                    ${character.class.features.map(f => `
-                        <div class="desc-box"><b class="text-amber-400">${f.name}:</b> <span class="text-gray-300">${f.desc}</span></div>
-                    `).join('')}
-                </div>
-            `;
-
             container.innerHTML = `
-                <h2 class="text-4xl font-bold text-amber-500 mb-8 text-center fantasy-title animate-fade-in">📜 Лист Персонажа</h2>
-                <div class="bg-gray-900/90 p-8 rounded-2xl border-2 border-amber-600/50 shadow-2xl space-y-6">
-                    <div class="text-center mb-6">
-                        <input type="text" id="char-name" placeholder="Введи имя персонажа" value="${character.name}" 
-                            class="bg-transparent text-3xl font-bold text-center w-full border-b-2 border-amber-600/50 focus:border-amber-500 outline-none pb-2 fantasy-title text-amber-400"
-                            oninput="character.name = this.value">
-                        <div class="text-gray-300 mt-3 text-lg">${character.race.name} • ${character.class.name} • ${character.background.name}</div>
-                        <div class="text-sm text-gray-500 mt-1">Кость хитов: <b class="text-amber-500">d${character.class.hitDie}</b> • Главная хар-ка: <b class="text-amber-500">${character.class.primary}</b></div>
+                <h2 class="text-4xl font-bold text-amber-500 mb-8 text-center fantasy-title"> Лист Персонажа</h2>
+                <div class="bg-gray-900/90 p-6 md:p-8 rounded-2xl border-2 border-amber-600/50 shadow-2xl space-y-6">
+                    <div class="text-center">
+                        <input type="text" id="char-name" placeholder="Имя персонажа" value="${character.name}" class="bg-transparent text-2xl md:text-3xl font-bold text-center w-full border-b-2 border-amber-600/50 focus:border-amber-500 outline-none pb-2 fantasy-title text-amber-400" oninput="character.name = this.value; saveToLocalStorage();">
+                        <div class="text-gray-300 mt-3">${character.race.name} • ${character.class.name} • ${character.background.name}</div>
                     </div>
-                    
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center mb-6">
-                        <div class="bg-gray-800/80 p-4 rounded-xl border border-amber-600/30">
-                            <div class="text-xs text-gray-400 mb-2">🛡️ Класс Доспеха</div>
-                            <div class="text-4xl font-bold text-amber-500 fantasy-title">${ac}</div>
-                        </div>
-                        <div class="bg-gray-800/80 p-4 rounded-xl border border-amber-600/30">
-                            <div class="text-xs text-gray-400 mb-2">⚡ Инициатива</div>
-                            <div class="text-4xl font-bold ${initiative >= 0 ? 'text-green-400' : 'text-red-400'} fantasy-title">${initiative >= 0 ? '+' : ''}${initiative}</div>
-                        </div>
-                        <div class="bg-gray-800/80 p-4 rounded-xl border border-amber-600/30">
-                            <div class="text-xs text-gray-400 mb-2">❤️ Хиты (HP)</div>
-                            <div class="text-4xl font-bold text-red-400 fantasy-title">${hp}</div>
-                        </div>
-                        <div class="bg-gray-800/80 p-4 rounded-xl border border-amber-600/30">
-                            <div class="text-xs text-gray-400 mb-2">👟 Скорость</div>
-                            <div class="text-4xl font-bold text-blue-400 fantasy-title">${speed} <span class="text-lg">фт</span></div>
-                        </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 text-center">
+                        <div class="bg-gray-800/80 p-3 rounded-xl border border-amber-600/30"><div class="text-xs text-gray-400">🛡️ КД</div><div class="text-3xl font-bold text-amber-500">${ac}</div></div>
+                        <div class="bg-gray-800/80 p-3 rounded-xl border border-amber-600/30"><div class="text-xs text-gray-400">⚡ Инициатива</div><div class="text-3xl font-bold ${dexMod >= 0 ? 'text-green-400' : 'text-red-400'}">${dexMod >= 0 ? '+' : ''}${dexMod}</div></div>
+                        <div class="bg-gray-800/80 p-3 rounded-xl border border-amber-600/30"><div class="text-xs text-gray-400">❤️ Хиты</div><div class="text-3xl font-bold text-red-400">${hp}</div></div>
+                        <div class="bg-gray-800/80 p-3 rounded-xl border border-amber-600/30"><div class="text-xs text-gray-400">👟 Скорость</div><div class="text-3xl font-bold text-blue-400">${character.race.speed} фт</div></div>
                     </div>
-
-                    <div class="grid grid-cols-2 gap-4 text-sm bg-gray-800/50 p-6 rounded-xl border border-gray-700">${statsList}</div>
-                    
-                    ${proficienciesHtml}
-                    ${racialAbilitiesHtml}
-                    ${classFeaturesHtml}
+                    <div class="grid grid-cols-2 gap-3 text-sm bg-gray-800/50 p-4 rounded-xl border border-gray-700">${statsList}</div>
+                    <div class="text-sm space-y-2 border-t border-gray-700 pt-4"><div><span class="text-gray-400">Доспехи:</span> ${character.class.armor.join(', ') || 'Нет'}</div><div><span class="text-gray-400">Оружие:</span> ${character.class.weapons.join(', ')}</div><div><span class="text-gray-400">Спасброски:</span> ${character.class.saves.join(', ')}</div></div>
+                    <div class="border-t border-gray-700 pt-4">${character.race.abilities.map(a => `<div class="desc-box"><b>${a.name}:</b> ${a.desc}</div>`).join('')}</div>
+                    <div class="border-t border-gray-700 pt-4">${character.class.features.map(f => `<div class="desc-box"><b>${f.name}:</b> ${f.desc}</div>`).join('')}</div>
                     ${spellsList}
-                    
-                    <div class="mt-8 text-center">
-                        <a href="https://5e14.ttg.club/" target="_blank" class="info-button text-lg px-8 py-3">
-                            📚 Подробная информация о правилах и способностях
-                        </a>
-                        <p class="text-xs text-gray-500 mt-3">Перейдите на сайт для детального изучения всех правил D&D 5e</p>
+                    <div class="flex gap-4 mt-6 flex-col md:flex-row">
+                        <button onclick="copyToDiscord()" class="flex-1 py-3 bg-gradient-to-r from-blue-600 to-blue-500 rounded-xl font-bold active:scale-95">📋 Discord</button>
+                        <button onclick="generatePDF()" class="flex-1 py-3 bg-gradient-to-r from-green-600 to-green-500 rounded-xl font-bold active:scale-95"> Скачать PDF</button>
                     </div>
-                    
-                    <div class="flex gap-4 mt-6">
-                        <button onclick="copyToDiscord()" class="flex-1 py-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 rounded-xl font-bold text-lg transition shadow-lg hover:shadow-blue-500/50 border border-blue-400/50">📋 Скопировать для Discord</button>
-                        <button onclick="generatePDF()" class="flex-1 py-4 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 rounded-xl font-bold text-lg transition shadow-lg hover:shadow-green-500/50 border border-green-400/50">📄 Скачать PDF лист</button>
-                    </div>
-                </div>
-            `;
+                </div>`;
         }
 
         function copyToDiscord() {
             let dexMod = Math.floor((character.stats.dex + (character.race?.bonus.dex || 0) - 10) / 2);
             let conMod = Math.floor((character.stats.con + (character.race?.bonus.con || 0) - 10) / 2);
-            let wisMod = Math.floor((character.stats.wis + (character.race?.bonus.wis || 0) - 10) / 2);
-
             let ac = 10 + dexMod;
-            if (character.class.id === 'barbarian') ac = 10 + dexMod + conMod;
-            if (character.class.id === 'monk') ac = 10 + dexMod + wisMod;
-
-            let initiative = dexMod;
+            if (character.class.id === 'barbarian') ac += conMod;
+            if (character.class.id === 'monk') ac += Math.floor((character.stats.wis + (character.race?.bonus.wis || 0) - 10) / 2);
             let hp = character.class.hitDie + conMod;
-            let speed = character.race.speed;
-
-            let text = `**📜 ${character.name || 'Безымянный герой'}**\n`;
-            text += `*${character.race.name} ${character.class.name} (${character.background.name})*\n\n`;
-            text += `**🛡️ КД:** ${ac} | **⚡ Инициатива:** ${initiative >= 0 ? '+' : ''}${initiative} | **❤️ Хиты:** ${hp} | **👟 Скорость:** ${speed} фт\n\n`;
-            text += `**Характеристики:**\n`;
-            for (let key in character.stats) {
-                let final = character.stats[key] + (character.race.bonus[key] || 0);
-                let mod = Math.floor((final - 10) / 2);
-                let modStr = mod >= 0 ? `+${mod}` : mod;
-                text += `${statNames[key]}: ${final} (${modStr})\n`;
-            }
-            
-            text += `\n**🛡️ Владения:**\n`;
-            text += `Доспехи: ${character.class.armor.join(', ') || 'Нет'}\n`;
-            text += `Оружие: ${character.class.weapons.join(', ')}\n`;
-            if (character.class.tools.length > 0) text += `Инструменты: ${character.class.tools.join(', ')}\n`;
-            text += `Спасброски: ${character.class.saves.join(', ')}\n`;
-            
-            text += `\n**🌟 Расовые способности:**\n${character.race.abilities.map(a => `• ${a.name}: ${a.desc}`).join('\n')}\n`;
-            text += `\n**⚔️ Особенности класса:**\n${character.class.features.map(f => `• ${f.name}: ${f.desc}`).join('\n')}\n`;
-            
-            if (character.class.magic) {
-                text += `\n**✨ Заговоры:** ${character.spells.cantrips.join(', ') || 'нет'}`;
-                text += `\n**📜 Заклинания 1-го уровня:** ${character.spells.level1.join(', ') || 'нет'}`;
-            }
-            
-            text += `\n\n📚 Подробная информация: https://5e14.ttg.club/`;
-            
+            let text = `**${character.name || 'Безымянный'}** (${character.race.name} ${character.class.name})\n️КД:${ac} ❤️HP:${hp} ⚡Init:${dexMod}\n`;
+            for (let k in character.stats) { let v = character.stats[k] + (character.race.bonus[k]||0); let m = Math.floor((v-10)/2); text += `${statNames[k]}:${v}(${m>=0?'+':''}${m}) `; }
+            text += `\nЗаговоры:${character.spells.cantrips.join(', ')}\n1ур:${character.spells.level1.join(', ')}`;
             navigator.clipboard.writeText(text);
-            const toast = document.getElementById('copy-toast');
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 2000);
+            const t = document.getElementById('copy-toast'); t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000);
         }
 
-        // === ГЕНЕРАЦИЯ PDF ЛИСТА ПЕРСОНАЖА ===
         async function generatePDF() {
             const { jsPDF } = window.jspdf;
+            const sc = document.getElementById('sheet-content');
+            const dexMod = Math.floor((character.stats.dex + (character.race?.bonus.dex || 0) - 10) / 2);
+            const conMod = Math.floor((character.stats.con + (character.race?.bonus.con || 0) - 10) / 2);
+            const ac = 10 + dexMod + (character.class.id === 'barbarian' ? conMod : 0) + (character.class.id === 'monk' ? Math.floor((character.stats.wis + (character.race?.bonus.wis || 0) - 10) / 2) : 0);
+            const hp = character.class.hitDie + conMod;
+
+            let statsHtml = '<div class="pdf-grid">';
+            for (let key in character.stats) {
+                let final = character.stats[key] + (character.race.bonus[key]||0);
+                let mod = Math.floor((final-10)/2);
+                statsHtml += `<div class="pdf-stat-box"><div class="pdf-stat-label">${statNames[key]}</div><div class="pdf-stat-value">${final}</div><div class="pdf-stat-mod">${mod>=0?'+':''}${mod}</div></div>`;
+            }
+            statsHtml += '</div>';
+
+            let abilitiesHtml = character.race.abilities.map(a => `<div class="pdf-ability"><span class="pdf-ability-name">${a.name}:</span> ${a.desc}</div>`).join('');
+            let featuresHtml = character.class.features.map(f => `<div class="pdf-ability"><span class="pdf-ability-name">${f.name}:</span> ${f.desc}</div>`).join('');
             
-            // Создаём содержимое для PDF
-            const sheetContent = document.getElementById('sheet-content');
-            sheetContent.innerHTML = `
-                <div style="margin-bottom: 20px;">
-                    <h2 style="font-size: 28px; color: #8b4513; margin: 0;">${character.name || 'Безымянный герой'}</h2>
-                    <p style="font-size: 16px; color: #666;">${character.race.name} ${character.class.name} • ${character.background.name}</p>
+            let spellsHtml = '';
+            if (character.class.magic && character.spells.cantrips.length > 0) {
+                const cs = spells[character.class.id];
+                spellsHtml = `<div class="pdf-section"><div class="pdf-section-title">✨ Заклинания</div><div><b>Заговоры:</b> ${character.spells.cantrips.join(', ')}</div><div><b>1-й уровень:</b> ${character.spells.level1.join(', ')}</div></div>`;
+            }
+
+            sc.innerHTML = `
+                <div class="pdf-section" style="text-align: center; background: #fef3c7; border-color: #d97706;">
+                    <div style="font-size: 20px; font-weight: bold; color: #d97706; margin-bottom: 5px;">${character.name || 'Безымянный герой'}</div>
+                    <div style="color: #6b7280;">${character.race.name} ${character.class.name} • ${character.background.name}</div>
                 </div>
-                
-                <div class="sheet-section">
-                    <h3 style="font-size: 20px; color: #8b4513; margin-bottom: 10px;">Характеристики</h3>
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
-                        ${Object.entries(character.stats).map(([key, value]) => {
-                            const final = value + (character.race.bonus[key] || 0);
-                            const mod = Math.floor((final - 10) / 2);
-                            const modStr = mod >= 0 ? `+${mod}` : mod;
-                            return `
-                                <div style="background: white; padding: 10px; border-radius: 5px; text-align: center;">
-                                    <div style="font-weight: bold; color: #8b4513;">${statNames[key]}</div>
-                                    <div style="font-size: 24px; margin: 5px 0;">${final}</div>
-                                    <div style="color: ${mod >= 0 ? '#22c55e' : '#ef4444'};">${modStr}</div>
-                                </div>
-                            `;
-                        }).join('')}
+                <div class="pdf-section">
+                    <div class="pdf-section-title"> Характеристики</div>
+                    ${statsHtml}
+                </div>
+                <div class="pdf-section">
+                    <div class="pdf-section-title">⚔️ Боевые параметры</div>
+                    <div class="pdf-grid">
+                        <div class="pdf-stat-box"><div class="pdf-stat-label">🛡️ КД</div><div class="pdf-stat-value">${ac}</div></div>
+                        <div class="pdf-stat-box"><div class="pdf-stat-label">❤️ Хиты</div><div class="pdf-stat-value">${hp}</div></div>
+                        <div class="pdf-stat-box"><div class="pdf-stat-label">⚡ Инициатива</div><div class="pdf-stat-value">${dexMod>=0?'+':''}${dexMod}</div></div>
+                        <div class="pdf-stat-box"><div class="pdf-stat-label">👟 Скорость</div><div class="pdf-stat-value">${character.race.speed} фт</div></div>
                     </div>
                 </div>
-                
-                <div class="sheet-section">
-                    <h3 style="font-size: 20px; color: #8b4513; margin-bottom: 10px;">Боевые параметры</h3>
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
-                        <div style="background: white; padding: 10px; border-radius: 5px; text-align: center;">
-                            <div style="font-size: 12px; color: #666;">КД</div>
-                            <div style="font-size: 24px; font-weight: bold; color: #8b4513;">${10 + Math.floor((character.stats.dex + (character.race.bonus.dex || 0) - 10) / 2)}</div>
-                        </div>
-                        <div style="background: white; padding: 10px; border-radius: 5px; text-align: center;">
-                            <div style="font-size: 12px; color: #666;">Хиты</div>
-                            <div style="font-size: 24px; font-weight: bold; color: #dc2626;">${character.class.hitDie + Math.floor((character.stats.con + (character.race.bonus.con || 0) - 10) / 2)}</div>
-                        </div>
-                        <div style="background: white; padding: 10px; border-radius: 5px; text-align: center;">
-                            <div style="font-size: 12px; color: #666;">Инициатива</div>
-                            <div style="font-size: 24px; font-weight: bold;">${Math.floor((character.stats.dex + (character.race.bonus.dex || 0) - 10) / 2) >= 0 ? '+' : ''}${Math.floor((character.stats.dex + (character.race.bonus.dex || 0) - 10) / 2)}</div>
-                        </div>
-                        <div style="background: white; padding: 10px; border-radius: 5px; text-align: center;">
-                            <div style="font-size: 12px; color: #666;">Скорость</div>
-                            <div style="font-size: 24px; font-weight: bold; color: #2563eb;">${character.race.speed} фт</div>
-                        </div>
-                    </div>
+                <div class="pdf-section">
+                    <div class="pdf-section-title">🛡️ Владения</div>
+                    <div class="pdf-info-row"><span class="pdf-info-label">Доспехи:</span> <span>${character.class.armor.join(', ') || 'Нет'}</span></div>
+                    <div class="pdf-info-row"><span class="pdf-info-label">Оружие:</span> <span>${character.class.weapons.join(', ')}</span></div>
+                    <div class="pdf-info-row"><span class="pdf-info-label">Спасброски:</span> <span>${character.class.saves.join(', ')}</span></div>
                 </div>
-                
-                <div class="sheet-section">
-                    <h3 style="font-size: 20px; color: #8b4513; margin-bottom: 10px;">Расовые способности</h3>
-                    <ul style="list-style: none; padding: 0;">
-                        ${character.race.abilities.map(a => `<li style="padding: 5px 0; border-bottom: 1px solid #ddd;"><b>${a.name}:</b> ${a.desc}</li>`).join('')}
-                    </ul>
+                <div class="pdf-section">
+                    <div class="pdf-section-title">🌟 Расовые способности</div>
+                    ${abilitiesHtml}
                 </div>
-                
-                <div class="sheet-section">
-                    <h3 style="font-size: 20px; color: #8b4513; margin-bottom: 10px;">Особенности класса</h3>
-                    <ul style="list-style: none; padding: 0;">
-                        ${character.class.features.map(f => `<li style="padding: 5px 0; border-bottom: 1px solid #ddd;"><b>${f.name}:</b> ${f.desc}</li>`).join('')}
-                    </ul>
+                <div class="pdf-section">
+                    <div class="pdf-section-title">⚔️ Особенности класса</div>
+                    ${featuresHtml}
                 </div>
-                
-                ${character.class.magic && character.spells.cantrips.length > 0 ? `
-                <div class="sheet-section">
-                    <h3 style="font-size: 20px; color: #8b4513; margin-bottom: 10px;">Заклинания</h3>
-                    <div style="margin-bottom: 10px;">
-                        <b style="color: #7c3aed;">Заговоры:</b> ${character.spells.cantrips.join(', ')}
-                    </div>
-                    <div>
-                        <b style="color: #2563eb;">1-й уровень:</b> ${character.spells.level1.join(', ')}
-                    </div>
-                </div>
-                ` : ''}
-                
-                <div class="sheet-section">
-                    <h3 style="font-size: 20px; color: #8b4513; margin-bottom: 10px;">Владения</h3>
-                    <div style="margin-bottom: 5px;"><b>Доспехи:</b> ${character.class.armor.join(', ') || 'Нет'}</div>
-                    <div style="margin-bottom: 5px;"><b>Оружие:</b> ${character.class.weapons.join(', ')}</div>
-                    ${character.class.tools.length > 0 ? `<div style="margin-bottom: 5px;"><b>Инструменты:</b> ${character.class.tools.join(', ')}</div>` : ''}
-                    <div><b>Спасброски:</b> ${character.class.saves.join(', ')}</div>
-                </div>
-                
-                <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #8b4513; color: #999; font-size: 12px;">
-                    Создано в Fast D&D Builder • ${new Date().toLocaleDateString('ru-RU')}
-                </div>
+                ${spellsHtml}
             `;
+
+            document.getElementById('pdf-date').textContent = new Date().toLocaleDateString('ru-RU');
             
-            // Генерируем PDF
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const element = document.getElementById('character-sheet');
-            element.style.display = 'block';
+            const el = document.getElementById('character-sheet');
+            el.style.display = 'block';
             
-            await html2canvas(element, {
-                scale: 2,
-                useCORS: true,
-                logging: false
-            }).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                const imgWidth = 210;
-                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            try {
+                const canvas = await html2canvas(el, { 
+                    scale: 2, 
+                    useCORS: true, 
+                    logging: false,
+                    width: 800,
+                    windowWidth: 800
+                });
                 
-                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                const imgWidth = canvas.width;
+                const imgHeight = canvas.height;
+                const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+                const imgX = (pdfWidth - imgWidth * ratio) / 2;
+                const imgY = 10;
+                
+                pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
                 pdf.save(`character-${character.name || 'unnamed'}.pdf`);
-                element.style.display = 'none';
-            });
+            } catch (error) {
+                console.error('PDF Error:', error);
+                alert('Ошибка при создании PDF. Попробуйте ещё раз.');
+            } finally {
+                el.style.display = 'none';
+            }
         }
 
-        // === РАНДОМАЙЗЕР ===
         function randomize() {
             character.race = races[Math.floor(Math.random() * races.length)];
             character.class = classes[Math.floor(Math.random() * classes.length)];
             character.background = backgrounds[Math.floor(Math.random() * backgrounds.length)];
-            
-            let stats = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
-            let pointsLeft = 27;
-            stats.forEach(s => character.stats[s] = 8);
-            
-            while (pointsLeft > 0) {
-                let stat = stats[Math.floor(Math.random() * stats.length)];
-                let currentVal = character.stats[stat];
-                if (currentVal < 15) {
-                    let cost = currentVal >= 13 ? 2 : 1;
-                    if (pointsLeft >= cost) {
-                        character.stats[stat]++;
-                        pointsLeft -= cost;
-                    }
-                }
-            }
-            
+            let s = ['str','dex','con','int','wis','cha'], p = 27;
+            s.forEach(k => character.stats[k] = 8);
+            while (p > 0) { let k = s[Math.floor(Math.random()*s.length)]; if (character.stats[k] < 15) { let c = character.stats[k] >= 13 ? 2 : 1; if (p >= c) { character.stats[k]++; p -= c; } } }
             if (character.class.magic && spells[character.class.id]) {
-                let classSpells = spells[character.class.id];
-                character.spells.cantrips = [];
-                character.spells.level1 = [];
-                
-                let availableCantrips = [...classSpells.cantrips];
-                for (let i = 0; i < character.class.cantrips && availableCantrips.length > 0; i++) {
-                    let idx = Math.floor(Math.random() * availableCantrips.length);
-                    character.spells.cantrips.push(availableCantrips[idx].name);
-                    availableCantrips.splice(idx, 1);
-                }
-                
-                let availableLevel1 = [...classSpells.level1];
-                for (let i = 0; i < character.class.spells1 && availableLevel1.length > 0; i++) {
-                    let idx = Math.floor(Math.random() * availableLevel1.length);
-                    character.spells.level1.push(availableLevel1[idx].name);
-                    availableLevel1.splice(idx, 1);
-                }
+                let cs = spells[character.class.id]; character.spells = { cantrips: [], level1: [] };
+                let ac = [...cs.cantrips]; for (let i=0; i<character.class.cantrips && ac.length; i++) { let idx = Math.floor(Math.random()*ac.length); character.spells.cantrips.push(ac[idx].name); ac.splice(idx,1); }
+                let al = [...cs.level1]; for (let i=0; i<character.class.spells1 && al.length; i++) { let idx = Math.floor(Math.random()*al.length); character.spells.level1.push(al[idx].name); al.splice(idx,1); }
             }
-            
-            currentStep = 1;
-            render();
-            alert('🎲 Случайный персонаж создан! Перейди на последний шаг, чтобы увидеть результат.');
+            currentStep = 1; render();
         }
 
+        const canvas = document.getElementById('particles-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize); resize();
+        
+        class Particle {
+            constructor() { this.reset(); }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = canvas.height + Math.random() * 100;
+                this.size = Math.random() * 3 + 1;
+                this.speedY = Math.random() * 1 + 0.5;
+                this.speedX = (Math.random() - 0.5) * 0.5;
+                this.opacity = Math.random() * 0.5 + 0.2;
+                this.color = Math.random() > 0.5 ? '#f59e0b' : '#ef4444';
+            }
+            update() {
+                this.y -= this.speedY;
+                this.x += this.speedX;
+                this.opacity -= 0.002;
+                if (this.y < 0 || this.opacity <= 0) this.reset();
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = this.opacity;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        for(let i=0; i<50; i++) particles.push(new Particle());
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        loadFromLocalStorage();
         render();
     </script>
 </body>
