@@ -1272,7 +1272,7 @@ render();
 
     // URL воркера/API — сохраняется в localStorage
     // По умолчанию использует локальный /api/anthropic (для Vercel)
-    var workerUrl = localStorage.getItem('ai_worker_url') || '/api/chat';
+    var workerUrl = localStorage.getItem('ai_worker_url') || 'https://312.basarievmaksim.workers.dev';
 
     fetch(workerUrl, {
       method:'POST',
