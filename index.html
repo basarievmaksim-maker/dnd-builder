@@ -1303,21 +1303,7 @@ render();
     document.getElementById('aiWorkerSkip').addEventListener('click', function(){
       setup.style.display='none';
     });
-  }
-
-  // Settings gear button
-  var settingsBtn = document.createElement('button');
-  settingsBtn.title='Настройки AI';
-  settingsBtn.style.cssText='position:absolute;bottom:82px;right:78px;z-index:500;width:32px;height:32px;border-radius:50%;background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;';
-  settingsBtn.textContent='⚙️';
-  document.body.appendChild(settingsBtn);
-  settingsBtn.addEventListener('click', function(e){
-    e.stopPropagation();
-    if(!open){ toggle(); }
-    setTimeout(showSetup, open ? 0 : 250);
-  });
-
-  // Show setup on first open if no worker configured
+  }  // Show setup on first open if no worker configured
   fab.addEventListener('click', toggle);
   closeBtn.addEventListener('click',toggle);
   go.addEventListener('click',function(){send(inp.value);});
