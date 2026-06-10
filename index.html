@@ -1,498 +1,1177 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fast D&D Builder</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Roboto:wght@300;400;500&display=swap');
-        
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { background-color: #0a0a0a; color: #e2e8f0; font-family: 'Roboto', sans-serif; min-height: 100vh; position: relative; overflow-x: hidden; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Конструктор персонажа D&D 5e</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --gold: #a07820;
+  --gold-light: #c49a2a;
+  --gold-dim: #7a5c14;
+  --bg-page: #f5f0e8;
+  --bg-panel: #ede7da;
+  --bg-card: #faf7f2;
+  --bg-card-hover: #f0eadc;
+  --bg-card-sel: #fdf3d8;
+  --border: rgba(120,90,30,0.18);
+  --border-strong: rgba(120,90,30,0.45);
+  --text-primary: #2a1f0e;
+  --text-secondary: #6b5030;
+  --text-muted: #9c7d50;
+  --font-display: Georgia, serif;
+  --font-body: Georgia, serif;
+  --font-ui: "Segoe UI", system-ui, sans-serif;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --shadow: 0 2px 12px rgba(80,50,10,0.12);
+}
+.page-bg{position:fixed;inset:0;z-index:0;background:url('images/bg/main-bg.jpg') center/cover no-repeat;filter:brightness(0.55) saturate(0.85);}
+#app{position:relative;z-index:1;}
+html, body { min-height:100vh; background:var(--bg-page); color:var(--text-primary); font-family:var(--font-body); font-size:16px; line-height:1.6; }
 
-        .bg-image { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('images/bg/main-bg.jpg') center/cover; z-index: -2; filter: brightness(0.4); }
-        .bg-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(0,0,0,0.7) 0%, rgba(10,10,20,0.8) 100%); z-index: -1; }
-        #particles-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+/* HEADER */
+.site-header { background:#2a1f0e; color:#f5f0e8; text-align:center; padding:1.5rem 1rem 1.25rem; border-bottom:3px solid var(--gold); }
+.site-header h1 { font-size:clamp(1.3rem,4vw,2rem); font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--gold-light); margin-bottom:.2rem; }
+.site-header p { font-size:.9rem; color:#c4a878; font-style:italic; }
 
-        .fantasy-title { font-family: 'Cinzel', serif; text-shadow: 0 0 20px rgba(245, 158, 11, 0.5); }
-        
-        .card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 2px solid rgba(245, 158, 11, 0.2); background: rgba(30, 30, 40, 0.85); backdrop-filter: blur(10px); position: relative; overflow: hidden; }
-        .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, transparent 100%); opacity: 0; transition: opacity 0.3s; pointer-events: none; }
-        .card:hover { border-color: rgba(245, 158, 11, 0.6); transform: translateY(-4px); box-shadow: 0 10px 40px rgba(245, 158, 11, 0.3); }
-        .card:active { transform: translateY(-2px) scale(0.98); }
-        .card.selected { border-color: rgba(245, 158, 11, 1); background: rgba(39, 39, 42, 0.95); box-shadow: 0 0 30px rgba(245, 158, 11, 0.5), inset 0 0 20px rgba(245, 158, 11, 0.1); transform: translateY(-2px); }
+/* PROGRESS */
+.progress-wrap { background:rgba(245,240,232,0.96); border-bottom:1px solid var(--border); padding:.75rem 1.25rem 0; }
+.progress-steps { display:flex; align-items:center; gap:3px; overflow-x:auto; padding-bottom:.6rem; scrollbar-width:none; }
+.progress-steps::-webkit-scrollbar { display:none; }
+.ps-item { display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; flex-shrink:0; padding:0 4px; opacity:.4; transition:opacity .2s; }
+.ps-item.done, .ps-item.active { opacity:1; }
+.ps-dot { width:26px; height:26px; border-radius:50%; border:1.5px solid var(--text-muted); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:var(--text-muted); background:#fff; transition:all .2s; }
+.ps-item.done .ps-dot { border-color:var(--gold); background:var(--gold); color:#fff; }
+.ps-item.active .ps-dot { border-color:var(--gold); background:var(--bg-card-sel); color:var(--gold); box-shadow:0 0 0 3px rgba(160,120,32,.15); }
+.ps-label { font-size:10px; color:var(--text-muted); white-space:nowrap; font-family:var(--font-ui); }
+.ps-item.active .ps-label { color:var(--gold); font-weight:600; }
+.ps-line { flex:1; height:1px; background:var(--border); min-width:10px; }
 
-        .class-icon { width: 64px; height: 64px; border-radius: 8px; object-fit: cover; border: 2px solid rgba(245, 158, 11, 0.3); box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .race-icon { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(245, 158, 11, 0.3); box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .icon-placeholder, .race-icon-placeholder { display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f59e0b, #d97706); color: black; border: 2px solid rgba(245, 158, 11, 0.5); }
-        .icon-placeholder { width: 64px; height: 64px; border-radius: 8px; font-size: 28px; font-weight: bold; }
-        .race-icon-placeholder { width: 48px; height: 48px; border-radius: 50%; font-size: 20px; font-weight: bold; }
+/* SUMMARY BAR */
+.summary-bar { display:flex; gap:6px; flex-wrap:wrap; padding:.5rem 1.25rem; background:rgba(237,231,218,0.97); border-bottom:1px solid var(--border); min-height:40px; align-items:center; }
+.sb-chip { display:flex; align-items:center; gap:4px; background:#fff; border:1px solid var(--border); border-radius:999px; padding:2px 10px; font-size:12px; font-family:var(--font-ui); }
+.sb-label { color:var(--text-muted); }
+.sb-val { color:var(--gold); font-weight:600; }
 
-        .stat-btn { background: linear-gradient(135deg, #334155, #1e293b); color: white; width: 44px; height: 44px; border-radius: 8px; font-weight: bold; font-size: 20px; border: 2px solid rgba(245, 158, 11, 0.3); transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
-        .stat-btn:hover:not(:disabled) { background: linear-gradient(135deg, #f59e0b, #d97706); color: black; box-shadow: 0 0 15px rgba(245, 158, 11, 0.5); }
-        .stat-btn:active:not(:disabled) { transform: scale(0.95); }
-        .stat-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+/* LAYOUT */
+#app { min-height:100vh; display:flex; flex-direction:column; }
+.step-container { flex:1; padding:1.25rem; max-width:1100px; width:100%; margin:0 auto; background:rgba(245,240,232,0.97); }
+.step-header { margin-bottom:1.25rem; }
+.step-header h2 { font-size:clamp(1.1rem,3vw,1.4rem); font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--gold); margin-bottom:.2rem; }
+.step-header p { font-size:.9rem; color:var(--text-secondary); font-style:italic; }
 
-        .spell-tag { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 12px; margin-right: 4px; font-weight: 600; }
-        .spell-tag.cantrip { background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; }
-        .spell-tag.level1 { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; }
+/* CARDS */
+.card-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
+.card-grid.wide { grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); }
+.choice-card { background:var(--bg-card); border:1.5px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; cursor:pointer; transition:border-color .15s,box-shadow .15s,transform .12s; }
+.choice-card:hover { border-color:var(--border-strong); box-shadow:var(--shadow); transform:translateY(-2px); }
+.choice-card.selected { border-color:var(--gold); background:var(--bg-card-sel); box-shadow:0 0 0 2px rgba(160,120,32,.2); }
+.choice-card.selected .card-chk { display:flex; }
+.card-chk { display:none; position:absolute; top:7px; right:7px; width:20px; height:20px; border-radius:50%; background:var(--gold); color:#fff; font-size:12px; font-weight:700; align-items:center; justify-content:center; z-index:2; }
+.card-img-wrap { position:relative; width:100%; aspect-ratio:3/4; overflow:hidden; background:#e8dfc8; display:flex; align-items:center; justify-content:center; }
+.card-img-wrap img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.card-emoji { position:relative; z-index:0; flex-shrink:0; }
+.card-body { padding:9px 11px; }
+.card-name { font-size:13px; font-weight:700; color:var(--text-primary); margin-bottom:3px; }
+.card-desc { font-size:11px; color:var(--text-secondary); line-height:1.4; }
+.card-tags { display:flex; flex-wrap:wrap; gap:3px; margin-top:5px; }
+.tag { font-size:10px; font-family:var(--font-ui); background:rgba(120,90,30,.08); border:1px solid var(--border); color:var(--text-secondary); padding:1px 5px; border-radius:3px; }
+.tag.magic { background:rgba(100,0,180,.08); border-color:rgba(100,0,180,.2); color:#6b21a8; }
+.tag.bonus { background:rgba(20,120,40,.08); border-color:rgba(20,120,40,.2); color:#166534; }
 
-        .copy-toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 14px 28px; border-radius: 10px; font-weight: bold; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4); font-size: 16px; }
-        .copy-toast.show { opacity: 1; }
+/* POINT BUY */
+.pointbuy-wrap { background:var(--bg-card); border:1.5px solid var(--border); border-radius:var(--radius-lg); padding:1.25rem; max-width:660px; box-shadow:var(--shadow); }
+.pb-points { display:flex; align-items:center; gap:12px; margin-bottom:1.25rem; padding-bottom:1rem; border-bottom:1px solid var(--border); }
+.pb-points-val { font-size:2rem; font-weight:700; color:var(--gold); font-family:var(--font-display); }
+.pb-points-label { font-size:13px; color:var(--text-secondary); }
+.pb-points-bar { flex:1; height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
+.pb-points-fill { height:100%; background:var(--gold); border-radius:3px; transition:width .2s; }
+.pb-stat-row { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid rgba(0,0,0,.05); }
+.pb-stat-row:last-child { border-bottom:none; }
+.pb-stat-name { width:140px; font-family:var(--font-ui); font-size:13px; font-weight:600; color:var(--text-primary); }
+.pb-stat-hint { font-size:11px; color:var(--text-muted); font-style:italic; font-weight:400; margin-top:1px; }
+.pb-btn { width:28px; height:28px; border-radius:50%; border:1.5px solid var(--border-strong); background:#fff; color:var(--gold); font-size:18px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .12s; flex-shrink:0; }
+.pb-btn:hover { background:var(--bg-card-sel); }
+.pb-btn:disabled { opacity:.3; cursor:not-allowed; }
+.pb-val { width:34px; text-align:center; font-size:1.1rem; font-weight:700; color:var(--text-primary); flex-shrink:0; }
+.pb-mod { width:36px; text-align:center; font-size:12px; font-family:var(--font-ui); color:var(--text-secondary); background:var(--bg-panel); border-radius:4px; padding:2px 0; flex-shrink:0; }
+.pb-cost { font-size:11px; color:var(--text-muted); flex-shrink:0; }
+.race-bonus-note { font-size:11px; color:#166534; font-family:var(--font-ui); flex-shrink:0; }
 
-        .points-counter { background: linear-gradient(135deg, #f59e0b, #d97706); color: black; padding: 12px 24px; border-radius: 10px; font-weight: bold; display: inline-block; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); font-size: 18px; }
+/* SPELL */
+.spell-info-bar { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:1rem; padding:10px 14px; background:rgba(100,0,180,.06); border:1px solid rgba(100,0,180,.15); border-radius:var(--radius); font-size:13px; font-family:var(--font-ui); }
+.spell-info-bar span { color:var(--text-secondary); }
+.spell-info-bar strong { color:#6b21a8; }
+.spell-section { margin-bottom:1.25rem; }
+.spell-section-title { font-size:12px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--gold-dim); margin-bottom:.6rem; padding-bottom:5px; border-bottom:1px solid var(--border); font-family:var(--font-ui); }
+.spells-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:8px; }
+.spell-card { background:var(--bg-card); border:1.5px solid var(--border); border-radius:var(--radius); padding:10px 12px; cursor:pointer; transition:border-color .12s; position:relative; }
+.spell-card:hover { border-color:rgba(100,0,180,.3); background:#faf6ff; }
+.spell-card.selected { border-color:#7c3aed; background:#f5f0ff; }
+.spell-card.selected::after { content:"✓"; position:absolute; top:6px; right:8px; color:#7c3aed; font-size:14px; font-weight:700; }
+.spell-name { font-weight:700; font-size:13px; color:var(--text-primary); margin-bottom:2px; }
+.spell-school { font-size:11px; color:var(--text-muted); margin-bottom:4px; font-family:var(--font-ui); }
+.spell-desc { font-size:12px; color:var(--text-secondary); line-height:1.4; }
 
-        .desc-box { background: rgba(30, 41, 59, 0.8); padding: 10px 14px; border-radius: 8px; margin: 6px 0; font-size: 13px; border-left: 3px solid #f59e0b; backdrop-filter: blur(5px); }
+/* EQUIP */
+.equip-section { margin-bottom:1.5rem; }
+.equip-title { font-size:12px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--gold-dim); margin-bottom:.6rem; padding-bottom:5px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:6px; font-family:var(--font-ui); }
+.equip-count { font-size:11px; color:var(--text-muted); text-transform:none; letter-spacing:0; font-weight:400; }
+.equip-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:8px; }
+.equip-card { background:var(--bg-card); border:1.5px solid var(--border); border-radius:var(--radius); padding:10px 12px; cursor:pointer; transition:border-color .12s; position:relative; }
+.equip-card:hover { border-color:var(--border-strong); }
+.equip-card.selected { border-color:var(--gold); background:var(--bg-card-sel); }
+.equip-card.selected::after { content:"✓"; position:absolute; top:6px; right:8px; color:var(--gold); font-size:13px; font-weight:700; }
+.equip-card.disabled { opacity:.35; pointer-events:none; }
+.equip-name { font-size:13px; font-weight:600; color:var(--text-primary); margin-bottom:4px; }
+.equip-stat { font-size:12px; color:var(--text-secondary); line-height:1.4; }
 
-        .info-button { display: inline-flex; align-items: center; gap: 6px; padding: 12px 24px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border-radius: 10px; font-weight: bold; text-decoration: none; transition: all 0.2s; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); font-size: 16px; }
-        .info-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6); }
+/* BACKGROUND CARDS */
+.bg-list { display:grid; gap:8px; max-width:680px; }
+.bg-card { background:var(--bg-card); border:1.5px solid var(--border); border-radius:var(--radius-lg); padding:13px 15px; cursor:pointer; transition:border-color .12s; position:relative; }
+.bg-card:hover { border-color:var(--border-strong); background:var(--bg-card-hover); }
+.bg-card.selected { border-color:var(--gold); background:var(--bg-card-sel); }
+.bg-card.selected::after { content:"✓"; position:absolute; top:12px; right:14px; color:var(--gold); font-size:15px; }
+.bg-card-name { font-size:14px; font-weight:700; color:var(--text-primary); margin-bottom:4px; }
+.bg-card-desc { font-size:13px; color:var(--text-secondary); line-height:1.5; }
+.bg-card-skills { font-size:11px; color:var(--text-muted); margin-top:5px; font-family:var(--font-ui); }
 
-        .stat-recommended { border: 2px solid rgba(245, 158, 11, 0.8) !important; background: linear-gradient(135deg, rgba(39, 39, 42, 0.9), rgba(51, 51, 61, 0.9)) !important; box-shadow: 0 0 20px rgba(245, 158, 11, 0.3) !important; }
-        .stat-primary { border-left: 4px solid #f59e0b !important; }
-        .tip-banner { background: linear-gradient(135deg, rgba(30, 58, 95, 0.9), rgba(15, 23, 42, 0.9)); border: 1px solid rgba(59, 130, 246, 0.5); border-radius: 10px; padding: 14px; margin-bottom: 18px; backdrop-filter: blur(10px); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        .tip-primary { color: #f59e0b; font-weight: bold; text-shadow: 0 0 10px rgba(245, 158, 11, 0.5); }
-        .tip-secondary { color: #60a5fa; font-weight: 600; }
+/* CHARACTER SHEET */
+.sheet-wrap { background:var(--bg-card); border:1.5px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; max-width:900px; box-shadow:var(--shadow); }
+.sheet-hero { background:#2a1f0e; padding:1.25rem; display:flex; gap:1.25rem; align-items:flex-start; flex-wrap:wrap; border-bottom:2px solid var(--gold-dim); }
+.sheet-portrait { width:88px; height:120px; border-radius:var(--radius); overflow:hidden; border:2px solid var(--gold-dim); flex-shrink:0; background:#3d2e18; position:relative; display:flex; align-items:center; justify-content:center; }
+.sheet-portrait img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.sheet-hero-info { flex:1; min-width:180px; }
+.sheet-char-name { font-size:1.4rem; font-weight:700; color:var(--gold-light); margin-bottom:6px; }
+.sheet-meta { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:10px; }
+.sheet-meta-item { font-size:11px; font-family:var(--font-ui); background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); border-radius:4px; padding:2px 7px; color:#c4a878; }
+.sheet-meta-item strong { color:#f5dca0; }
+.sheet-vitals { display:flex; gap:8px; flex-wrap:wrap; }
+.vital-box { background:rgba(0,0,0,.3); border:1px solid rgba(255,255,255,.15); border-radius:var(--radius); padding:7px 13px; text-align:center; min-width:65px; }
+.vital-val { font-size:1.25rem; font-weight:700; color:#f5f0e8; }
+.vital-val.hp { color:#fca5a5; }
+.vital-val.ac { color:#93c5fd; }
+.vital-val.init { color:#86efac; }
+.vital-label { font-size:9px; font-family:var(--font-ui); color:#a0855a; text-transform:uppercase; letter-spacing:.06em; }
+.sheet-body { padding:1.1rem; display:grid; grid-template-columns:1fr 1fr; gap:.9rem; }
+.sheet-section { background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); padding:11px; }
+.sheet-section-title { font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--gold-dim); margin-bottom:8px; padding-bottom:5px; border-bottom:1px solid var(--border); font-family:var(--font-ui); }
+.stat-grid-sheet { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+.stat-block { background:#fff; border:1px solid var(--border); border-radius:var(--radius); padding:7px 5px; text-align:center; }
+.stat-block-name { font-size:9px; font-family:var(--font-ui); font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); margin-bottom:2px; }
+.stat-block-val { font-size:1.1rem; font-weight:700; color:var(--text-primary); }
+.stat-block-mod { font-size:11px; font-family:var(--font-ui); color:var(--text-secondary); }
+.feature-list { list-style:none; }
+.feature-list li { font-size:12px; color:var(--text-secondary); padding:4px 0; border-bottom:1px solid rgba(0,0,0,.05); line-height:1.5; }
+.feature-list li:last-child { border-bottom:none; }
+.feat-name { color:var(--text-primary); font-weight:600; }
+.sheet-list { list-style:none; }
+.sheet-list li { font-size:12px; color:var(--text-secondary); padding:4px 0; border-bottom:1px solid rgba(0,0,0,.05); display:flex; justify-content:space-between; align-items:flex-start; gap:6px; }
+.sheet-list li:last-child { border-bottom:none; }
+.sh-name { color:var(--text-primary); }
+.sh-val { text-align:right; font-size:11px; }
+.spell-slots-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(55px,1fr)); gap:5px; }
+.slot-box { background:#f3e8ff; border:1px solid #c4b5fd; border-radius:var(--radius); padding:5px 4px; text-align:center; }
+.slot-level { font-size:9px; color:#7c3aed; text-transform:uppercase; letter-spacing:.05em; font-family:var(--font-ui); }
+.slot-count { font-size:.95rem; font-weight:700; color:#6d28d9; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+/* GOLD */
+.gold-roll-box { display:flex; align-items:center; gap:12px; padding:13px 16px; background:#fefce8; border:1px solid #fbbf24; border-radius:var(--radius); margin-top:1rem; }
+.gold-val { font-size:1.5rem; font-weight:700; color:#92400e; }
+.gold-label { font-size:13px; color:#78350f; }
 
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
-        ::-webkit-scrollbar-thumb { background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 4px; }
+/* BOTTOM NAV */
+.bottom-nav { position:sticky; bottom:0; z-index:10; background:rgba(255,255,255,0.97); border-top:1.5px solid var(--border); padding:.65rem 1.25rem; display:flex; justify-content:space-between; align-items:center; gap:8px; box-shadow:0 -2px 12px rgba(80,50,10,.08); }
+.btn { font-family:var(--font-ui); font-size:13px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; padding:9px 20px; border-radius:var(--radius); border:1.5px solid; cursor:pointer; transition:all .12s; white-space:nowrap; }
+.btn-primary { background:var(--gold); border-color:var(--gold); color:#fff; }
+.btn-primary:hover { background:var(--gold-light); border-color:var(--gold-light); }
+.btn-primary:disabled { opacity:.4; cursor:not-allowed; }
+.btn-secondary { background:#fff; border-color:var(--border-strong); color:var(--text-secondary); }
+.btn-secondary:hover { border-color:var(--gold); color:var(--text-primary); }
+.btn-ghost { background:transparent; border-color:transparent; color:var(--text-muted); padding:9px 12px; }
+.btn-ghost:hover { color:var(--gold); }
+.nav-right { display:flex; gap:6px; align-items:center; }
+.link-ref { display:inline-flex; align-items:center; gap:4px; font-size:12px; font-family:var(--font-ui); color:var(--gold-dim); border:1px solid var(--border); border-radius:4px; padding:3px 8px; text-decoration:none; }
+.link-ref:hover { color:var(--gold); border-color:var(--border-strong); }
+.subgroup-label { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin-top:10px; margin-bottom:5px; font-family:var(--font-ui); }
+.kd-preview { margin-top:1rem; padding:10px 14px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:var(--radius); font-size:13px; font-family:var(--font-ui); color:var(--text-secondary); }
+@media(max-width:600px) {
+  .step-container { padding:.9rem; }
+  .card-grid { grid-template-columns:repeat(2,1fr); }
+  .card-grid.wide { grid-template-columns:repeat(2,1fr); }
+  .sheet-body { grid-template-columns:1fr; }
+  .pb-stat-name { width:110px; }
+  .btn { padding:8px 12px; font-size:12px; }
+}
+@media(prefers-reduced-motion:reduce) { * { transition:none !important; } }
 
-        @media (max-width: 640px) {
-            body { font-size: 14px; }
-            .p-8 { padding: 16px !important; }
-            .text-5xl { font-size: 2rem !important; }
-            .text-4xl { font-size: 1.75rem !important; }
-            .text-3xl { font-size: 1.5rem !important; }
-            .grid-cols-3, .grid-cols-2 { grid-template-columns: 1fr !important; }
-            .card { padding: 16px !important; margin-bottom: 12px; }
-            .class-icon { width: 48px; height: 48px; }
-            .race-icon { width: 40px; height: 40px; }
-            .lg\:grid-cols-3, .md\:grid-cols-2, .md\:grid-cols-3, .md\:grid-cols-4 { grid-template-columns: 1fr !important; }
-            .gap-4 { gap: 12px !important; }
-            .flex.gap-4 { flex-direction: column; gap: 10px !important; }
-            .flex.gap-4 button { width: 100%; }
-            .grid-cols-4 { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
-            .tip-banner { padding: 12px; font-size: 13px; }
-        }
-
-        #character-sheet { 
-            display: none; 
-            background: white; 
-            color: #1a1a1a; 
-            padding: 20px; 
-            font-family: 'Arial', sans-serif;
-            font-size: 11px;
-            line-height: 1.4;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        .pdf-header { text-align: center; border-bottom: 3px solid #d97706; padding-bottom: 10px; margin-bottom: 15px; }
-        .pdf-title { font-size: 24px; font-weight: bold; color: #d97706; margin: 0; }
-        .pdf-section { margin-bottom: 12px; padding: 10px; background: #f9fafb; border-radius: 5px; border: 1px solid #e5e7eb; }
-        .pdf-section-title { font-size: 14px; font-weight: bold; color: #d97706; margin-bottom: 8px; border-bottom: 2px solid #d97706; padding-bottom: 3px; }
-        .pdf-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-        .pdf-stat-box { background: white; padding: 6px; border-radius: 4px; text-align: center; border: 1px solid #d1d5db; }
-        .pdf-stat-label { font-size: 10px; color: #6b7280; font-weight: 600; }
-        .pdf-stat-value { font-size: 18px; font-weight: bold; color: #d97706; margin: 2px 0; }
-        .pdf-stat-mod { font-size: 12px; color: #10b981; }
-        .pdf-info-row { display: flex; justify-content: space-between; margin: 4px 0; font-size: 11px; }
-        .pdf-info-label { color: #6b7280; font-weight: 600; }
-        .pdf-ability { background: white; padding: 6px; margin: 4px 0; border-radius: 4px; border-left: 3px solid #d97706; font-size: 10px; }
-        .pdf-ability-name { font-weight: bold; color: #d97706; }
-        .pdf-footer { text-align: center; margin-top: 20px; padding-top: 10px; border-top: 2px solid #d97706; color: #9ca3af; font-size: 10px; }
-    </style>
+  .ai-btn{position:fixed;bottom:80px;right:20px;z-index:100;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a855f7);border:2px solid rgba(168,85,247,.4);box-shadow:0 4px 20px rgba(124,58,237,.4);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;transition:transform .15s;}
+  .ai-btn:hover{transform:scale(1.08);}
+  .ai-badge{position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:#ef4444;color:#fff;font-size:10px;font-weight:700;display:none;align-items:center;justify-content:center;border:2px solid #fff;}
+  .ai-badge.show{display:flex;}
+  @media(max-width:600px){.ai-btn{bottom:75px;right:12px;}}
+</style>
 </head>
-<body class="min-h-screen flex flex-col items-center p-4">
-
-    <div class="bg-image"></div>
-    <div class="bg-overlay"></div>
-    <canvas id="particles-canvas"></canvas>
-
-    <header class="text-center mb-6 relative z-10 animate-fade-in w-full max-w-5xl mx-auto px-4">
-        <h1 class="text-5xl font-bold text-amber-500 mb-2 fantasy-title">️ Fast D&D Builder</h1>
-        <p class="text-gray-300 mb-3 text-base md:text-lg">Создай персонажа за 3 минуты • Шаг <span id="step-indicator" class="text-amber-400 font-bold">1</span> из <span id="total-steps" class="text-amber-400 font-bold">5</span></p>
-        <div class="flex gap-3 justify-center flex-wrap">
-            <button onclick="randomize()" class="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 rounded-lg font-bold text-sm transition shadow-lg hover:shadow-purple-500/50 active:scale-95">🎲 Случайный</button>
-            <button onclick="clearSave()" class="px-5 py-2.5 bg-gradient-to-r from-gray-600 to-gray-500 hover:from-gray-500 hover:to-gray-400 rounded-lg font-bold text-sm transition shadow-lg active:scale-95">🗑️ Сброс</button>
-        </div>
-    </header>
-
-    <main id="app-container" class="w-full max-w-5xl bg-gray-900/80 p-6 md:p-8 rounded-2xl shadow-2xl border border-amber-600/30 backdrop-blur-xl relative z-10 mx-2 md:mx-0"></main>
-
-    <div class="flex gap-4 mt-6 w-full max-w-5xl justify-between relative z-10 px-2 md:px-0 flex-wrap md:flex-nowrap">
-        <button id="btn-back" onclick="prevStep()" class="hidden px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 rounded-lg font-bold transition shadow-lg border border-amber-600/30 flex-1 md:flex-none active:scale-95">← Назад</button>
-        <button id="btn-next" onclick="nextStep()" class="px-6 py-3 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-black rounded-lg font-bold transition shadow-lg hover:shadow-amber-500/50 border border-amber-400/50 flex-1 md:flex-none ml-auto active:scale-95">Далее →</button>
+<body>
+<div class="page-bg"></div>
+<div id="app">
+  <header class="site-header">
+    <h1>Конструктор персонажа D&amp;D 5e</h1>
+    <p>Создай своего героя шаг за шагом</p>
+  </header>
+  <div class="progress-wrap"><div class="progress-steps" id="progressSteps"></div></div>
+  <div class="summary-bar" id="summaryBar"></div>
+  <div class="step-container" id="stepContainer"></div>
+  <div class="bottom-nav">
+    <button class="btn btn-secondary" id="btnBack">← Назад</button>
+    <div class="nav-right">
+      <button class="btn btn-ghost" id="btnRandom">🎲 Рандом</button>
+      <button class="btn btn-primary" id="btnNext">Далее →</button>
     </div>
+  </div>
+</div>
+<script>
+const P = {
+  r_human: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTAgMjgwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMzZDI1MTAiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMxZTEwMDgiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0ibyIgeDE9IjAlIiB5MT0iNTAlIiB4Mj0iMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDApIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDAuNTUpIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjIxMCIgaGVpZ2h0PSIyODAiIGZpbGw9InVybCgjZykiLz48cmVjdCB3aWR0aD0iMjEwIiBoZWlnaHQ9IjI4MCIgZmlsbD0idXJsKCNvKSIvPjx0ZXh0IHg9IjEwNSIgeT0iMTQwIiBmb250LXNpemU9IjgyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7wn6eRPC90ZXh0Pjx0ZXh0IHg9IjEwNSIgeT0iMjU4IiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuOCkiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLHNlcmlmIiBsZXR0ZXItc3BhY2luZz0iMiI+0KfQldCb0J7QktCV0Jo8L3RleHQ+PC9zdmc+",
+  r_elf: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTAgMjgwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMwZjMwMjAiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwNzFhMGYiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0ibyIgeDE9IjAlIiB5MT0iNTAlIiB4Mj0iMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDApIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDAuNTUpIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjIxMCIgaGVpZ2h0PSIyODAiIGZpbGw9InVybCgjZykiLz48cmVjdCB3aWR0aD0iMjEwIiBoZWlnaHQ9IjI4MCIgZmlsbD0idXJsKCNvKSIvPjx0ZXh0IHg9IjEwNSIgeT0iMTQwIiBmb250LXNpemU9IjgyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7wn6edPC90ZXh0Pjx0ZXh0IHg9IjEwNSIgeT0iMjU4IiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuOCkiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLHNlcmlmIiBsZXR0ZXItc3BhY2luZz0iMiI+0K3Qm9Cs0KQ8L3RleHQ+PC9zdmc+",
+  r_dwarf: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTAgMjgwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMzZDJjMTAiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMxZTE2MDgiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0ibyIgeDE9IjAlIiB5MT0iNTAlIiB4Mj0iMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDApIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDAuNTUpIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjIxMCIgaGVpZ2h0PSIyODAiIGZpbGw9InVybCgjZykiLz48cmVjdCB3aWR0aD0iMjEwIiBoZWlnaHQ9IjI4MCIgZmlsbD0idXJsKCNvKSIvPjx0ZXh0IHg9IjEwNSIgeT0iMTQwIiBmb250LXNpemU9IjgyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7im4/vuI88L3RleHQ+PHRleHQgeD0iMTA1IiB5PSIyNTgiIGZvbnQtc2l6ZT0iMTIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC44KSIgZm9udC1mYW1pbHk9Ikdlb3JnaWEsc2VyaWYiIGxldHRlci1zcGFjaW5nPSIyIj7QlNCS0JDQoNCkPC90ZXh0Pjwvc3ZnPg==",
+  r_gnome: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTAgMjgwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMyNTEwNDAiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMxMjA4MjAiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0ibyIgeDE9IjAlIiB5MT0iNTAlIiB4Mj0iMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDApIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDAuNTUpIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjIxMCIgaGVpZ2h0PSIyODAiIGZpbGw9InVybCgjZykiLz48cmVjdCB3aWR0aD0iMjEwIiBoZWlnaHQ9IjI4MCIgZmlsbD0idXJsKCNvKSIvPjx0ZXh0IHg9IjEwNSIgeT0iMTQwIiBmb250LXNpemU9IjgyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7wn5SuPC90ZXh0Pjx0ZXh0IHg9IjEwNSIgeT0iMjU4IiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuOCkiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLHNlcmlmIiBsZXR0ZXItc3BhY2luZz0iMiI+0JPQndCe0Jw8L3RleHQ+PC9zdmc+",
+  r_half_elf: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTAgMjgwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMxMDIwM2QiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwODEwMWUiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0ibyIgeDE9IjAlIiB5MT0iNTAlIiB4Mj0iMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDApIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDAuNTUpIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjIxMCIgaGVpZ2h0PSIyODAiIGZpbGw9InVybCgjZykiLz48cmVjdCB3aWR0aD0iMjEwIiBoZWlnaHQ9IjI4MCIgZmlsbD0idXJsKCNvKSIvPjx0ZXh0IHg9IjEwNSIgeT0iMTQwIiBmb250LXNpemU9IjgyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7wn4yZPC90ZXh0Pjx0ZXh0IHg9IjEwNSIgeT0iMjU4IiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuOCkiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLHNlcmlmIiBsZXR0ZXItc3BhY2luZz0iMiI+0J/QntCb0KPQrdCb0KzQpDwvdGV4dD48L3N2Zz4=",
+  r_half_orc: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTAgMjgwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMxZTMwMTAiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwZjE4MDgiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0ibyIgeDE9IjAlIiB5MT0iNTAlIiB4Mj0iMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDApIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDAuNTUpIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjIxMCIgaGVpZ2h0PSIyODAiIGZpbGw9InVybCgjZykiLz48cmVjdCB3aWR0aD0iMjEwIiBoZWlnaHQ9IjI4MCIgZmlsbD0idXJsKCNvKSIvPjx0ZXh0IHg9IjEwNSIgeT0iMTQwIiBmb250LXNpemU9IjgyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7wn5KqPC90ZXh0Pjx0ZXh0IHg9IjEwNSIgeT0iMjU4IiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuOCkiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLHNlcmlmIiBsZXR0ZXItc3BhY2luZz0iMiI+0J/QntCb0KPQntCg0Jo8L3RleHQ+PC9zdmc+",
+  r_halfling: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTAgMjgwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMzZDM4MGYiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMxZTFjMDgiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0ibyIgeDE9IjAlIiB5MT0iNTAlIiB4Mj0iMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDApIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDAuNTUpIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjIxMCIgaGVpZ2h0PSIyODAiIGZpbGw9InVybCgjZykiLz48cmVjdCB3aWR0aD0iMjEwIiBoZWlnaHQ9IjI4MCIgZmlsbD0idXJsKCNvKSIvPjx0ZXh0IHg9IjEwNSIgeT0iMTQwIiBmb250LXNpemU9IjgyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7wn42APC90ZXh0Pjx0ZXh0IHg9IjEwNSIgeT0iMjU4IiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuOCkiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLHNlcmlmIiBsZXR0ZXItc3BhY2luZz0iMiI+0J/QntCb0KPQoNCe0KHQm9CY0Jo8L3RleHQ+PC9zdmc+",
+  r_dragonborn: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTAgMjgwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMzZDEwMTAiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMxZTA4MDgiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0ibyIgeDE9IjAlIiB5MT0iNTAlIiB4Mj0iMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDApIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDAuNTUpIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjIxMCIgaGVpZ2h0PSIyODAiIGZpbGw9InVybCgjZykiLz48cmVjdCB3aWR0aD0iMjEwIiBoZWlnaHQ9IjI4MCIgZmlsbD0idXJsKCNvKSIvPjx0ZXh0IHg9IjEwNSIgeT0iMTQwIiBmb250LXNpemU9IjgyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7wn5CJPC90ZXh0Pjx0ZXh0IHg9IjEwNSIgeT0iMjU4IiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuOCkiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLHNlcmlmIiBsZXR0ZXItc3BhY2luZz0iMiI+0JTQoNCQ0JrQntCdLjwvdGV4dD48L3N2Zz4=",
+  r_tiefling: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTAgMjgwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMzZDEwMzAiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMxZTA4MTgiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0ibyIgeDE9IjAlIiB5MT0iNTAlIiB4Mj0iMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDApIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDAuNTUpIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjIxMCIgaGVpZ2h0PSIyODAiIGZpbGw9InVybCgjZykiLz48cmVjdCB3aWR0aD0iMjEwIiBoZWlnaHQ9IjI4MCIgZmlsbD0idXJsKCNvKSIvPjx0ZXh0IHg9IjEwNSIgeT0iMTQwIiBmb250LXNpemU9IjgyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7wn5iIPC90ZXh0Pjx0ZXh0IHg9IjEwNSIgeT0iMjU4IiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuOCkiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLHNlcmlmIiBsZXR0ZXItc3BhY2luZz0iMiI+0KLQmNCk0JvQmNCd0JM8L3RleHQ+PC9zdmc+",
+  c_barbarian: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTAgMjgwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMzZDFhMGEiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMxZTBkMDUiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0ibyIgeDE9IjAlIiB5MT0iNTAlIiB4Mj0iMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDApIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDAuNTUpIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjIxMCIgaGVpZ2h0PSIyODAiIGZpbGw9InVybCgjZykiLz48cmVjdCB3aWR0aD0iMjEwIiBoZWlnaHQ9IjI4MCIgZmlsbD0idXJsKCNvKSIvPjx0ZXh0IHg9IjEwNSIgeT0iMTQwIiBmb250LXNpemU9IjgyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7impTvuI88L3RleHQ+PHRleHQgeD0iMTA1IiB5PSIyNTgiIGZvbnQtc2l6ZT0iMTIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC44KSIgZm9udC1mYW1pbHk9Ikdlb3JnaWEsc2VyaWYiIGxldHRlci1zcGFjaW5nPSIyIj7QktCQ0KDQktCQ0KA8L3RleHQ+PC9zdmc+",
+  c_bard: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTAgMjgwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMzZDBlMzUiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMxZTA3MTkiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0ibyIgeDE9IjAlIiB5MT0iNTAlIiB4Mj0iMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDApIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDAuNTUpIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjIxMCIgaGVpZ2h0PSIyODAiIGZpbGw9InVybCgjZykiLz48cmVjdCB3aWR0aD0iMjEwIiBoZWlnaHQ9IjI4MCIgZmlsbD0idXJsKCNvKSIvPjx0ZXh0IHg9IjEwNSIgeT0iMTQwIiBmb250LXNpemU9IjgyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7wn462PC90ZXh0Pjx0ZXh0IHg9IjEwNSIgeT0iMjU4IiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuOCkiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLHNlcmlmIiBsZXR0ZXItc3BhY2luZz0iMiI+0JHQkNCg0JQ8L3RleHQ+PC9zdmc+",
+  c_cleric: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTAgMjgwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMzZDM1MDAiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMxZTFhMDAiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0ibyIgeDE9IjAlIiB5MT0iNTAlIiB4Mj0iMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDApIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDAuNTUpIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjIxMCIgaGVpZ2h0PSIyODAiIGZpbGw9InVybCgjZykiLz48cmVjdCB3aWR0aD0iMjEwIiBoZWlnaHQ9IjI4MCIgZmlsbD0idXJsKCNvKSIvPjx0ZXh0IHg9IjEwNSIgeT0iMTQwIiBmb250LXNpemU9IjgyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7inJ3vuI88L3RleHQ+PHRleHQgeD0iMTA1IiB5PSIyNTgiIGZvbnQtc2l6ZT0iMTIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC44KSIgZm9udC1mYW1pbHk9Ikdlb3JnaWEsc2VyaWYiIGxldHRlci1zcGFjaW5nPSIyIj7QltCg0JXQpjwvdGV4dD48L3N2Zz4=",
+  c_druid: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTAgMjgwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMwZTNkMTIiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwNzFlMDkiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0ibyIgeDE9IjAlIiB5MT0iNTAlIiB4Mj0iMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDApIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDAuNTUpIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjIxMCIgaGVpZ2h0PSIyODAiIGZpbGw9InVybCgjZykiLz48cmVjdCB3aWR0aD0iMjEwIiBoZWlnaHQ9IjI4MCIgZmlsbD0idXJsKCNvKSIvPjx0ZXh0IHg9IjEwNSIgeT0iMTQwIiBmb250LXNpemU9IjgyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7wn4y/PC90ZXh0Pjx0ZXh0IHg9IjEwNSIgeT0iMjU4IiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuOCkiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLHNlcmlmIiBsZXR0ZXItc3BhY2luZz0iMiI+0JTQoNCj0JjQlDwvdGV4dD48L3N2Zz4=",
+  c_fighter: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTAgMjgwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMxYTFhM2QiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwZDBkMWUiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0ibyIgeDE9IjAlIiB5MT0iNTAlIiB4Mj0iMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDApIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDAuNTUpIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjIxMCIgaGVpZ2h0PSIyODAiIGZpbGw9InVybCgjZykiLz48cmVjdCB3aWR0aD0iMjEwIiBoZWlnaHQ9IjI4MCIgZmlsbD0idXJsKCNvKSIvPjx0ZXh0IHg9IjEwNSIgeT0iMTQwIiBmb250LXNpemU9IjgyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7wn5uh77iPPC90ZXh0Pjx0ZXh0IHg9IjEwNSIgeT0iMjU4IiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuOCkiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLHNlcmlmIiBsZXR0ZXItc3BhY2luZz0iMiI+0JLQntCY0J08L3RleHQ+PC9zdmc+",
+  c_monk: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTAgMjgwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMzZDJhMGUiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMxZTE1MDciLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0ibyIgeDE9IjAlIiB5MT0iNTAlIiB4Mj0iMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDApIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDAuNTUpIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjIxMCIgaGVpZ2h0PSIyODAiIGZpbGw9InVybCgjZykiLz48cmVjdCB3aWR0aD0iMjEwIiBoZWlnaHQ9IjI4MCIgZmlsbD0idXJsKCNvKSIvPjx0ZXh0IHg9IjEwNSIgeT0iMTQwIiBmb250LXNpemU9IjgyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7wn6WLPC90ZXh0Pjx0ZXh0IHg9IjEwNSIgeT0iMjU4IiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuOCkiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLHNlcmlmIiBsZXR0ZXItc3BhY2luZz0iMiI+0JzQntCd0JDQpTwvdGV4dD48L3N2Zz4=",
+  c_paladin: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTAgMjgwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMzZDNjMTAiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMxZTFlMDgiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0ibyIgeDE9IjAlIiB5MT0iNTAlIiB4Mj0iMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDApIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDAuNTUpIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjIxMCIgaGVpZ2h0PSIyODAiIGZpbGw9InVybCgjZykiLz48cmVjdCB3aWR0aD0iMjEwIiBoZWlnaHQ9IjI4MCIgZmlsbD0idXJsKCNvKSIvPjx0ZXh0IHg9IjEwNSIgeT0iMTQwIiBmb250LXNpemU9IjgyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7impzvuI88L3RleHQ+PHRleHQgeD0iMTA1IiB5PSIyNTgiIGZvbnQtc2l6ZT0iMTIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC44KSIgZm9udC1mYW1pbHk9Ikdlb3JnaWEsc2VyaWYiIGxldHRlci1zcGFjaW5nPSIyIj7Qn9CQ0JvQkNCU0JjQnTwvdGV4dD48L3N2Zz4=",
+  c_ranger: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTAgMjgwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMwZTNkMjAiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwNzFlMTAiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0ibyIgeDE9IjAlIiB5MT0iNTAlIiB4Mj0iMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDApIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDAuNTUpIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjIxMCIgaGVpZ2h0PSIyODAiIGZpbGw9InVybCgjZykiLz48cmVjdCB3aWR0aD0iMjEwIiBoZWlnaHQ9IjI4MCIgZmlsbD0idXJsKCNvKSIvPjx0ZXh0IHg9IjEwNSIgeT0iMTQwIiBmb250LXNpemU9IjgyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7wn4+5PC90ZXh0Pjx0ZXh0IHg9IjEwNSIgeT0iMjU4IiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuOCkiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLHNlcmlmIiBsZXR0ZXItc3BhY2luZz0iMiI+0KHQm9CV0JTQntCf0KvQojwvdGV4dD48L3N2Zz4=",
+  c_rogue: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTAgMjgwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMxZTFlMWUiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwZTBlMGUiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0ibyIgeDE9IjAlIiB5MT0iNTAlIiB4Mj0iMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDApIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDAuNTUpIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjIxMCIgaGVpZ2h0PSIyODAiIGZpbGw9InVybCgjZykiLz48cmVjdCB3aWR0aD0iMjEwIiBoZWlnaHQ9IjI4MCIgZmlsbD0idXJsKCNvKSIvPjx0ZXh0IHg9IjEwNSIgeT0iMTQwIiBmb250LXNpemU9IjgyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7wn5eh77iPPC90ZXh0Pjx0ZXh0IHg9IjEwNSIgeT0iMjU4IiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuOCkiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLHNlcmlmIiBsZXR0ZXItc3BhY2luZz0iMiI+0J/Qm9Cj0KI8L3RleHQ+PC9zdmc+",
+  c_sorcerer: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTAgMjgwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMyODEwM2QiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMxNDA4MWUiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0ibyIgeDE9IjAlIiB5MT0iNTAlIiB4Mj0iMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDApIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDAuNTUpIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjIxMCIgaGVpZ2h0PSIyODAiIGZpbGw9InVybCgjZykiLz48cmVjdCB3aWR0aD0iMjEwIiBoZWlnaHQ9IjI4MCIgZmlsbD0idXJsKCNvKSIvPjx0ZXh0IHg9IjEwNSIgeT0iMTQwIiBmb250LXNpemU9IjgyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7inKg8L3RleHQ+PHRleHQgeD0iMTA1IiB5PSIyNTgiIGZvbnQtc2l6ZT0iMTIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC44KSIgZm9udC1mYW1pbHk9Ikdlb3JnaWEsc2VyaWYiIGxldHRlci1zcGFjaW5nPSIyIj7Qp9CQ0KDQntCU0JXQmTwvdGV4dD48L3N2Zz4=",
+  c_warlock: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTAgMjgwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMxYTEwM2QiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwZDA4MWUiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0ibyIgeDE9IjAlIiB5MT0iNTAlIiB4Mj0iMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDApIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDAuNTUpIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjIxMCIgaGVpZ2h0PSIyODAiIGZpbGw9InVybCgjZykiLz48cmVjdCB3aWR0aD0iMjEwIiBoZWlnaHQ9IjI4MCIgZmlsbD0idXJsKCNvKSIvPjx0ZXh0IHg9IjEwNSIgeT0iMTQwIiBmb250LXNpemU9IjgyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7wn5GB77iPPC90ZXh0Pjx0ZXh0IHg9IjEwNSIgeT0iMjU4IiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuOCkiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLHNlcmlmIiBsZXR0ZXItc3BhY2luZz0iMiI+0JrQntCb0JTQo9CdPC90ZXh0Pjwvc3ZnPg==",
+  c_wizard: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTAgMjgwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMxMDJhM2QiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwODE1MWUiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0ibyIgeDE9IjAlIiB5MT0iNTAlIiB4Mj0iMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDApIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSJyZ2JhKDAsMCwwLDAuNTUpIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjIxMCIgaGVpZ2h0PSIyODAiIGZpbGw9InVybCgjZykiLz48cmVjdCB3aWR0aD0iMjEwIiBoZWlnaHQ9IjI4MCIgZmlsbD0idXJsKCNvKSIvPjx0ZXh0IHg9IjEwNSIgeT0iMTQwIiBmb250LXNpemU9IjgyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7wn5OaPC90ZXh0Pjx0ZXh0IHg9IjEwNSIgeT0iMjU4IiBmb250LXNpemU9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuOCkiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLHNlcmlmIiBsZXR0ZXItc3BhY2luZz0iMiI+0JLQntCb0KjQldCR0J3QmNCaPC90ZXh0Pjwvc3ZnPg==",
+};
 
-    <div id="copy-toast" class="copy-toast">✅ Лист скопирован в буфер обмена!</div>
+const STAT_NAMES = {STR:'Сила',DEX:'Ловкость',CON:'Телосложение',INT:'Интеллект',WIS:'Мудрость',CHA:'Харизма'};
+const STATS = ['STR','DEX','CON','INT','WIS','CHA'];
+const POINT_COST = {8:0,9:1,10:2,11:3,12:4,13:5,14:7,15:9};
 
-    <div id="character-sheet">
-        <div class="pdf-header">
-            <h1 class="pdf-title">📜 ЛИСТ ПЕРСОНАЖА D&D 5e</h1>
-            <p style="color: #6b7280; margin: 5px 0;">Fast D&D Builder</p>
+const RACES = [
+  { id:'human',      name:'Человек',         emoji:'🧑', img:'images/races/human.png',
+    desc:'Универсальная раса — способна освоить любую профессию.', speed:30,
+    bonuses:{STR:1,DEX:1,CON:1,INT:1,WIS:1,CHA:1},
+    traits:['Универсальность: дополнительный навык на выбор'] },
+  { id:'elf',        name:'Эльф',            emoji:'🧝', img:'images/races/elf.png',
+    desc:'Грациозные и острозрящие. Прирождённые лучники и маги.', speed:35,
+    bonuses:{DEX:2,INT:1},
+    traits:['Тёмное зрение 60 фт.','Острые чувства (владение Восприятие)','Иммунитет ко сну','Транс: медитация вместо сна'] },
+  { id:'dwarf',      name:'Дварф',           emoji:'⛏️', img:'images/races/dwarf.png',
+    desc:'Выносливые воины гор. Стойки к ядам.', speed:25,
+    bonuses:{CON:2,WIS:1},
+    traits:['Тёмное зрение 60 фт.','Устойчивость к яду (преимущество на спасбросок)','Боевая подготовка дварфов','Каменное чутьё'] },
+  { id:'gnome',      name:'Гном',            emoji:'🔮', img:'images/races/gnome.png',
+    desc:'Изобретательные и любознательные. Природная магическая защита.', speed:25,
+    bonuses:{INT:2,CON:1},
+    traits:['Тёмное зрение 60 фт.','Хитрость гномов (преим. на спасброски против магии)','Заговор «Малое волшебство»'] },
+  { id:'half-elf',   name:'Полуэльф',        emoji:'🌙', img:'images/races/halfelf.png',
+    desc:'Харизма эльфов и адаптивность людей. Идеальный дипломат.', speed:30,
+    bonuses:{CHA:2,DEX:1,WIS:1},
+    traits:['Тёмное зрение 60 фт.','Иммунитет ко сну','Два навыка на выбор'] },
+  { id:'half-orc',   name:'Полуорк',         emoji:'💪', img:'images/races/halforc.png',
+    desc:'Мощные бойцы. Встают даже после смертельного удара.', speed:30,
+    bonuses:{STR:2,CON:1},
+    traits:['Тёмное зрение 60 фт.','Владение навыком Запугивание','Непоколебимость: вместо смерти — 1 хп (1/отдых)','Дикие атаки: +1 кость урона при критическом ударе'] },
+  { id:'halfling',   name:'Полурослик',       emoji:'🍀', img:'images/races/halfling.png',
+    desc:'Удачливые и ловкие. Перебросить неудачу раз в день.', speed:25,
+    bonuses:{DEX:2,CHA:1},
+    traits:['Везение: перебросить 1 на к20','Храбрость: преимущество против страха','Проворство: можно двигаться через клетку существа большего размера'] },
+  { id:'dragonborn', name:'Драконорождённый', emoji:'🐉', img:'images/races/dragonborn.png',
+    desc:'Наследники драконов. Дыхание стихий и устойчивость к ним.', speed:30,
+    bonuses:{STR:2,CHA:1},
+    traits:['Стихийное дыхание (по родословной)','Устойчивость к урону своей родословной','Языки: Общий и Драконий'] },
+  { id:'tiefling',   name:'Тифлинг',         emoji:'😈', img:'images/races/tiefling.png',
+    desc:'Потомки демонов с природной магией тьмы.', speed:30,
+    bonuses:{INT:1,CHA:2},
+    traits:['Тёмное зрение 60 фт.','Устойчивость к огню','Заговор: Малое волшебство','3 ур: Адское возмездие','5 ур: Тьма'] },
+];
+
+const CLASSES = [
+  { id:'barbarian', name:'Варвар',       emoji:'⚔️',  img:'images/classes/barbarian.png',
+    tagline:'Беспощадный боец, черпающий силу в ярости',
+    hitDie:12, primaryStats:['STR','CON'], isMagic:false, acFormula:'barb',
+    statHints:{STR:'★★★ Атаки и урон',CON:'★★★ Хп и защита без доспеха',DEX:'★★ КД без брони'},
+    prof:{armor:['Лёгкие доспехи','Средние доспехи','Щиты'],weapons:['Простое оружие','Воинское оружие'],tools:[]},
+    features:[
+      {name:'Ярость',desc:'Бонус +2 к урону, преимущество на Силу, устойчивость к физ. урону. 2 раза/долгий отдых.'},
+      {name:'Защита без доспеха',desc:'КД = 10 + мод. Ловкости + мод. Телосложения (без брони).'},
+      {name:'Безрассудная атака',desc:'Преимущество на атаки Силой, но враги получают преимущество против вас.'},
+    ]},
+  { id:'bard',      name:'Бард',         emoji:'🎶',  img:'images/classes/bard.png',
+    tagline:'Универсальный творец, магия которого — слово и музыка',
+    hitDie:8, primaryStats:['CHA'], isMagic:true, spellAbility:'CHA',
+    cantripsKnown:2, spellsKnown:4, slots:[2],
+    statHints:{CHA:'★★★ Заклинания и вдохновение',DEX:'★★ Инициатива и лёгкая броня',CON:'★ Концентрация и хп'},
+    prof:{armor:['Лёгкие доспехи'],weapons:['Простое оружие','Ручные арбалеты','Длинные мечи','Рапиры','Короткие мечи'],tools:['3 инструмента барда на выбор']},
+    features:[
+      {name:'Бардовское вдохновение',desc:'Даёте к6 вдохновения союзнику бонусным действием. Кол-во = мод. Харизмы.'},
+      {name:'Мастер на все руки',desc:'Половина бонуса мастерства к проверкам без владения.'},
+      {name:'Песнь отдыха',desc:'На коротком отдыхе союзники восстанавливают +1к6 хп.'},
+    ]},
+  { id:'cleric',    name:'Жрец',         emoji:'✝️',  img:'images/classes/cleric.png',
+    tagline:'Посланник богов — лечит, защищает и карает именем веры',
+    hitDie:8, primaryStats:['WIS'], isMagic:true, spellAbility:'WIS',
+    cantripsKnown:3, spellsKnown:4, slots:[2],
+    statHints:{WIS:'★★★ Заклинания',CON:'★★ Концентрация и хп',STR:'★ Для боевых жрецов'},
+    prof:{armor:['Лёгкие доспехи','Средние доспехи','Щиты'],weapons:['Простое оружие'],tools:[]},
+    features:[
+      {name:'Сотворение заклинаний',desc:'Характеристика: Мудрость. Готовите: ур. жреца + мод. Мудрости заклинаний.'},
+      {name:'Священный символ',desc:'Используете символ как фокусировку для заклинаний.'},
+      {name:'Домен (Жизнь)',desc:'Эффективное лечение: +2 + уровень заклинания к лечащим заклинаниям.'},
+    ]},
+  { id:'druid',     name:'Друид',        emoji:'🌿',  img:'images/classes/druid.png',
+    tagline:'Страж природы, способный принять облик зверя',
+    hitDie:8, primaryStats:['WIS'], isMagic:true, spellAbility:'WIS',
+    cantripsKnown:2, spellsKnown:4, slots:[2],
+    statHints:{WIS:'★★★ Заклинания',CON:'★★ Концентрация и хп',DEX:'★ Лёгкая броня'},
+    prof:{armor:['Лёгкие доспехи (не металл)','Средние доспехи (не металл)','Щиты (не металл)'],weapons:['Дубины','Кинжалы','Дротики','Посохи','Серпы','Пращи','Копья'],tools:['Набор травника']},
+    features:[
+      {name:'Облик зверя',desc:'Бонусное действие: превращение в зверя. 2 раза/короткий отдых.'},
+      {name:'Друидийский язык',desc:'Говорите на тайном языке природы.'},
+      {name:'Сотворение заклинаний',desc:'Характеристика: Мудрость. Готовите заклинания каждый день.'},
+    ]},
+  { id:'fighter',   name:'Воин',         emoji:'🛡️',  img:'images/classes/fighter.png',
+    tagline:'Мастер всех видов оружия и доспехов',
+    hitDie:10, primaryStats:['STR','CON'], isMagic:false,
+    statHints:{STR:'★★★ Атаки ближнего боя',DEX:'★★★ Дальний бой / финессное оружие',CON:'★★ Хп'},
+    prof:{armor:['Все доспехи','Щиты'],weapons:['Простое оружие','Воинское оружие'],tools:[]},
+    features:[
+      {name:'Боевой стиль',desc:'Выберите специализацию: Стрельба (+2 к дальним атакам), Оборона (+1 КД), Дуэль (+2 урона) и др.'},
+      {name:'Второе дыхание',desc:'Бонусным действием: 1к10 + ур. воина хп. 1 раз/короткий отдых.'},
+      {name:'Всплеск активности',desc:'Дополнительное действие Атаки в этом ходу. 1 раз/короткий отдых.'},
+    ]},
+  { id:'monk',      name:'Монах',        emoji:'🥋',  img:'images/classes/monk.png',
+    tagline:'Мастер боевых искусств — скорость и ки вместо брони',
+    hitDie:8, primaryStats:['DEX','WIS'], isMagic:false, acFormula:'monk',
+    statHints:{DEX:'★★★ Атаки, КД и инициатива',WIS:'★★★ КД монаха',CON:'★★ Хп'},
+    prof:{armor:[],weapons:['Простое оружие','Короткие мечи'],tools:['Один ремесленный инструмент']},
+    features:[
+      {name:'Защита без доспеха',desc:'КД = 10 + мод. Ловкости + мод. Мудрости.'},
+      {name:'Боевые искусства',desc:'Используйте Ловкость для ударов; к4 урона; бонусная безоружная атака.'},
+      {name:'Ки (1 очко)',desc:'Шквал ударов, Терпение, Дефлектирование снарядов. Восстановление: короткий отдых.'},
+    ]},
+  { id:'paladin',   name:'Паладин',      emoji:'⚜️',  img:'images/classes/paladin.png',
+    tagline:'Святой воин — тяжёлый доспех и магия исцеления',
+    hitDie:10, primaryStats:['STR','CHA'], isMagic:true, spellAbility:'CHA',
+    cantripsKnown:0, spellsKnown:2, slots:[2],
+    statHints:{STR:'★★★ Атаки',CHA:'★★★ Заклинания и Божественный карающий удар',CON:'★★ Хп'},
+    prof:{armor:['Все доспехи','Щиты'],weapons:['Простое оружие','Воинское оружие'],tools:[]},
+    features:[
+      {name:'Божественное чувство',desc:'Ощущаете нечисть/небожителей в 60 фт. Раз: 1 + мод. Харизмы.'},
+      {name:'Возложение рук',desc:'Пул исцеления = ур. паладина × 5. Снятие болезней — 5 хп.'},
+      {name:'Магия паладина',desc:'Характеристика: Харизма. Готовите заклинания каждый день.'},
+    ]},
+  { id:'ranger',    name:'Следопыт',     emoji:'🏹',  img:'images/classes/ranger.png',
+    tagline:'Мастер дикой природы — охотник с магией природы',
+    hitDie:10, primaryStats:['DEX','WIS'], isMagic:true, spellAbility:'WIS',
+    cantripsKnown:0, spellsKnown:2, slots:[2],
+    statHints:{DEX:'★★★ Атаки дальнего боя и инициатива',WIS:'★★★ Заклинания',CON:'★★ Хп'},
+    prof:{armor:['Лёгкие доспехи','Средние доспехи','Щиты'],weapons:['Простое оружие','Воинское оружие'],tools:[]},
+    features:[
+      {name:'Враг природы',desc:'+2 к урону и преимущество на Выживание против 2 выбранных типов врагов.'},
+      {name:'Исследование',desc:'В 2 выбранных местностях: всегда знаете стороны света, не заблудитесь.'},
+      {name:'Магия следопыта',desc:'Характеристика: Мудрость.'},
+    ]},
+  { id:'rogue',     name:'Плут',         emoji:'🗡️',  img:'images/classes/rogue.png',
+    tagline:'Мастер теней — бьёт больно там, где не ждут',
+    hitDie:8, primaryStats:['DEX'], isMagic:false,
+    statHints:{DEX:'★★★ Скрытые атаки, уклонение и инициатива',INT:'★★ Для аркановых плутов',CON:'★ Хп'},
+    prof:{armor:['Лёгкие доспехи'],weapons:['Простое оружие','Ручные арбалеты','Длинные мечи','Рапиры','Короткие мечи'],tools:['Воровские инструменты']},
+    features:[
+      {name:'Скрытая атака',desc:'+1к6 урона при атаке с преимуществом или когда рядом союзник.'},
+      {name:'Хитрое действие',desc:'Бонусным действием: Засада, Отступление или Уклонение.'},
+      {name:'Мастерство',desc:'Удвоенный бонус мастерства для 2 выбранных навыков.'},
+    ]},
+  { id:'sorcerer',  name:'Чародей',      emoji:'✨',  img:'images/classes/sorcerer.png',
+    tagline:'Маг с магией в крови — инстинктивный и мощный',
+    hitDie:6, primaryStats:['CHA'], isMagic:true, spellAbility:'CHA',
+    cantripsKnown:4, spellsKnown:2, slots:[2],
+    statHints:{CHA:'★★★ Все заклинания',CON:'★★★ Концентрация и хп',DEX:'★ Инициатива'},
+    prof:{armor:[],weapons:['Кинжалы','Дротики','Пращи','Посохи','Лёгкие арбалеты'],tools:[]},
+    features:[
+      {name:'Чародейство',desc:'4 очка чародейства. Метамагия: Тонкие, Могущественные заклинания и др.'},
+      {name:'Источник магии',desc:'Дополнительный к20 при проверке концентрации.'},
+      {name:'Метамагия',desc:'2 метамагических свойства на выбор.'},
+    ]},
+  { id:'warlock',   name:'Колдун',       emoji:'👁️',  img:'images/classes/warlock.png',
+    tagline:'Сделал сделку с тёмной силой — мало слотов, но быстро восстанавливаются',
+    hitDie:8, primaryStats:['CHA'], isMagic:true, spellAbility:'CHA',
+    cantripsKnown:2, spellsKnown:2, slots:[1],
+    statHints:{CHA:'★★★ Все заклинания',CON:'★★ Концентрация и хп',DEX:'★ Лёгкая броня'},
+    prof:{armor:['Лёгкие доспехи'],weapons:['Простое оружие'],tools:[]},
+    features:[
+      {name:'Потусторонний покровитель',desc:'Выберите покровителя (Архидьявол, Великий Древний, Архифея).'},
+      {name:'Магия сделки',desc:'Ячейки восстанавливаются на коротком отдыхе!'},
+      {name:'Мистическое воззвание',desc:'1 воззвание на выбор (постоянные особые умения).'},
+    ]},
+  { id:'wizard',    name:'Волшебник',    emoji:'📚',  img:'images/classes/wizard.png',
+    tagline:'Мастер арканной магии — самый широкий список заклинаний',
+    hitDie:6, primaryStats:['INT'], isMagic:true, spellAbility:'INT',
+    cantripsKnown:3, spellsKnown:6, slots:[2],
+    statHints:{INT:'★★★ Все заклинания',CON:'★★★ Концентрация и хп',DEX:'★ Инициатива'},
+    prof:{armor:[],weapons:['Кинжалы','Дротики','Пращи','Посохи','Лёгкие арбалеты'],tools:[]},
+    features:[
+      {name:'Книга заклинаний',desc:'Начинаете с 6 заклинаниями 1 уровня. Можно добавлять новые из свитков.'},
+      {name:'Подготовка заклинаний',desc:'Готовите: ур. волшебника + мод. Интеллекта заклинаний.'},
+      {name:'Восстановление арканы',desc:'На коротком отдыхе восстанавливайте ячейки до ½ уровня.'},
+    ]},
+];
+
+const BACKGROUNDS = [
+  {id:'acolyte',    name:'Послушник',    desc:'Провели годы в храме, изучая религиозные обряды.',                      skills:'Знание религии, Проницательность', feature:'Укрытие в храмах.'},
+  {id:'criminal',   name:'Преступник',   desc:'Жили на краю закона — воровство, контрабанда.',                         skills:'Скрытность, Обман',               feature:'Криминальные связи.'},
+  {id:'folk_hero',  name:'Народный герой',desc:'Простой человек, ставший символом надежды.',                           skills:'Обращение с животными, Выживание', feature:'Гостеприимство простых людей.'},
+  {id:'noble',      name:'Дворянин',     desc:'Рождены в привилегии — богатство и связи знатной семьи.',               skills:'История, Убеждение',              feature:'Доступ к высшим кругам общества.'},
+  {id:'sage',       name:'Мудрец',       desc:'Провели годы в изучении трактатов и манускриптов.',                     skills:'Магия, История',                  feature:'Знаете, где найти любую информацию.'},
+  {id:'soldier',    name:'Солдат',       desc:'Сражались в армии — дисциплина и боевые навыки.',                       skills:'Атлетика, Запугивание',           feature:'Военный ранг признаётся сослуживцами.'},
+  {id:'outlander',  name:'Чужеземец',    desc:'Выросли вдали от цивилизации — лес, горы.',                             skills:'Атлетика, Выживание',             feature:'Находите еду и воду в дикой природе.'},
+  {id:'entertainer',name:'Артист',       desc:'Процветали за счёт таланта — музыкант или акробат.',                    skills:'Акробатика, Выступление',         feature:'Кров и еда за выступление в любом кабаке.'},
+];
+
+const SPELLS = {
+  bard:{
+    cantrips:[
+      {id:'bc1',name:'Малое волшебство',   school:'Преобразование',  desc:'Незначительный магический эффект: звук, огонёк свечи, запах. Не наносит урона.'},
+      {id:'bc2',name:'Дружба',            school:'Очарование',      desc:'Преимущество на проверки Харизмы против 1 существа на 1 мин. Потом оно знает об очаровании.'},
+      {id:'bc3',name:'Сарказм',           school:'Очарование',      desc:'Атака: 1к4 психического урона. Цель атакует с помехой до следующего вашего хода.'},
+      {id:'bc4',name:'Свет',              school:'Преобразование',  desc:'Предмет излучает яркий свет в 20 фт. и тусклый ещё на 20 фт. Длительность: 1 час.'},
+      {id:'bc5',name:'Истинный удар',     school:'Прорицание',      desc:'Следующий бросок атаки против цели — с преимуществом (до конца вашего следующего хода).'},
+      {id:'bc6',name:'Починка',           school:'Преобразование',  desc:'Восстанавливает небольшой разрыв или перелом в предмете.'},
+    ],
+    spells1:[
+      {id:'bs1',name:'Лечение ран',        school:'Воплощение 1 ур.',desc:'Существо восстанавливает 1к8 + мод. заклинаний хп. Не работает на нежити и конструктах.'},
+      {id:'bs2',name:'Очарование личности',school:'Очарование 1 ур.',desc:'Цель считает вас другом (спасбросок Мудрости). 1 час.'},
+      {id:'bs3',name:'Усыпление',          school:'Очарование 1 ур.',desc:'Усыпляет существ с суммарными хп до 5к8 (начиная с наименьших хп).'},
+      {id:'bs4',name:'Диссонирующий шёпот',school:'Очарование 1 ур.',desc:'3к6 психического урона, цель немедленно убегает на максимальную скорость.'},
+      {id:'bs5',name:'Жуткий смех Таши',   school:'Очарование 1 ур.',desc:'Цель падает ниц, смеясь (Недееспособное). Спасбросок Мудрости каждый ход.'},
+      {id:'bs6',name:'Волна грома',         school:'Воплощение 1 ур.',desc:'2к8 урона звуком в 15-фт кубе. Существа отброшены на 10 фт.'},
+      {id:'bs7',name:'Опознание',           school:'Прорицание 1 ур.',desc:'Узнаёте магические свойства предмета или заклинания на существе. Ритуал.'},
+      {id:'bs8',name:'Тихий образ',         school:'Иллюзия 1 ур.',  desc:'Статичный зрительный образ до 5-фт куба. 10 минут.'},
+      {id:'bs9',name:'Героизм',             school:'Очарование 1 ур.',desc:'Иммунитет к страху + мод. временных хп/ход. Концентрация 1 мин.'},
+      {id:'bs10',name:'Маскировка',         school:'Иллюзия 1 ур.',  desc:'Меняете внешнее обличие: одежда, черты лица, рост. 1 час.'},
+      {id:'bs11',name:'Длинный шаг',        school:'Преобразование 1 ур.',desc:'Скорость цели +10 фт., прыжки удваиваются. 1 час.'},
+      {id:'bs12',name:'Животная дружба',    school:'Очарование 1 ур.',desc:'Очаровываете зверя с Инт ≤ 3 на 24 часа.'},
+    ]
+  },
+  cleric:{
+    cantrips:[
+      {id:'cc1',name:'Священное пламя', school:'Воплощение',  desc:'1к8 урона излучением (спасбросок Ловкости). Игнорирует укрытие.'},
+      {id:'cc2',name:'Наставление',    school:'Прорицание',  desc:'Добавляет к4 к проверке характеристики союзника.'},
+      {id:'cc3',name:'Малое волшебство',school:'Преобразование',desc:'Незначительный магический эффект.'},
+      {id:'cc4',name:'Свет',          school:'Преобразование',desc:'Предмет излучает свет в 20 фт. 1 час.'},
+      {id:'cc5',name:'Сопротивление', school:'Ограждение',  desc:'Цель добавляет к4 к одному спасброску (концентрация до 1 мин).'},
+      {id:'cc6',name:'Починка',        school:'Преобразование',desc:'Чинит небольшой разрыв или перелом предмета.'},
+    ],
+    spells1:[
+      {id:'cs1',name:'Лечение ран',          school:'Воплощение 1 ур.',  desc:'1к8 + мод. хп при прикосновении.'},
+      {id:'cs2',name:'Благословение',        school:'Очарование 1 ур.',  desc:'До 3 существ: +к4 к броскам атаки и спасброскам. Концентрация 1 мин.'},
+      {id:'cs3',name:'Команда',              school:'Очарование 1 ур.',  desc:'Одно слово — приказ (Беги, Упади, Стой). Спасбросок Мудрости.'},
+      {id:'cs4',name:'Щит веры',             school:'Ограждение 1 ур.',  desc:'+2 к КД цели. Концентрация 10 минут.'},
+      {id:'cs5',name:'Исцеляющее слово',     school:'Воплощение 1 ур.',  desc:'Бонусным действием: 1к4 + мод. хп в 60 фт. Спасает умирающих.'},
+      {id:'cs6',name:'Направленный удар',    school:'Прорицание 1 ур.',  desc:'Следующий бросок атаки союзника — с преимуществом (реакция).'},
+      {id:'cs7',name:'Защита от зла и добра',school:'Ограждение 1 ур.',  desc:'Аномалии и нечисть не могут вас очаровать или напугать. Концентрация 10 мин.'},
+      {id:'cs8',name:'Обнаружение зла и добра',school:'Прорицание 1 ур.',desc:'Знаете о нечисти, небожителях и феях в 30 фт. Концентрация 10 мин.'},
+      {id:'cs9',name:'Возмездие',            school:'Воплощение 1 ур.',  desc:'Реакция: 2к10 + мод. урона излучением атаковавшему.'},
+      {id:'cs10',name:'Волшебный снаряд',    school:'Воплощение 1 ур.',  desc:'3 болта по 1к4+1 урона каждый. Автоматически попадают.'},
+    ]
+  },
+  druid:{
+    cantrips:[
+      {id:'dc1',name:'Наставление',   school:'Прорицание',    desc:'Добавляет к4 к проверке характеристики союзника.'},
+      {id:'dc2',name:'Огонь друидов', school:'Воплощение',    desc:'1к8 огненного (спасбросок Ловкости). Горящие предметы.'},
+      {id:'dc3',name:'Шип',          school:'Преобразование', desc:'Атака: 1к6 колющего + скорость цели −10 фт. до следующего хода.'},
+      {id:'dc4',name:'Чаща и камень',school:'Преобразование', desc:'Дальняя атака: 1к8 дробящего, игнорирует полуукрытие.'},
+      {id:'dc5',name:'Сопротивление',school:'Ограждение',    desc:'К4 к одному спасброску при концентрации (до 1 мин).'},
+      {id:'dc6',name:'Малое волшебство',school:'Преобразование',desc:'Незначительный природный эффект.'},
+    ],
+    spells1:[
+      {id:'ds1',name:'Лечение ран',          school:'Воплощение 1 ур.',   desc:'1к8 + мод. хп при прикосновении.'},
+      {id:'ds2',name:'Очарование животных',  school:'Очарование 1 ур.',   desc:'Зверь (Инт < 4) считает вас другом на 24 часа.'},
+      {id:'ds3',name:'Запутывание',          school:'Преобразование 1 ур.',desc:'Трава и лоза удерживают существ (спасбросок Силы). Концентрация 1 мин.'},
+      {id:'ds4',name:'Исцеляющее слово',     school:'Воплощение 1 ур.',   desc:'Бонусным действием: 1к4 + мод. хп в 60 фт.'},
+      {id:'ds5',name:'Детектирование яда',   school:'Прорицание 1 ур.',   desc:'Обнаруживаете яды и ядовитых существ в 30 фт. 10 мин.'},
+      {id:'ds6',name:'Волна грома',          school:'Воплощение 1 ур.',   desc:'2к8 грома в 15-фт кубе, существа отброшены на 10 фт.'},
+      {id:'ds7',name:'Прыжок',              school:'Преобразование 1 ур.',desc:'Утраивает дальность прыжка цели. 1 мин.'},
+      {id:'ds8',name:'Разговор с животными',school:'Прорицание 1 ур.',   desc:'Понимаете речь зверей и говорите с ними. Ритуал 10 мин.'},
+      {id:'ds9',name:'Длинный шаг',         school:'Преобразование 1 ур.',desc:'Скорость +10 фт., прыжки удваиваются. 1 час.'},
+      {id:'ds10',name:'Туманный шаг',       school:'Преобразование 1 ур.',desc:'Бонусным действием телепортируетесь до 30 фт.'},
+    ]
+  },
+  paladin:{
+    cantrips:[],
+    spells1:[
+      {id:'ps1',name:'Лечение ран',           school:'Воплощение 1 ур.',  desc:'1к8 + мод. хп при прикосновении.'},
+      {id:'ps2',name:'Священный меч',         school:'Воплощение 1 ур.',  desc:'+2к8 лучистого урона при попаданиях. Концентрация 1 мин.'},
+      {id:'ps3',name:'Щит веры',             school:'Ограждение 1 ур.',  desc:'+2 КД цели. Концентрация 10 мин.'},
+      {id:'ps4',name:'Благословение',         school:'Очарование 1 ур.',  desc:'До 3 существ: +к4 к атаке и спасброскам. Концентрация 1 мин.'},
+      {id:'ps5',name:'Команда',              school:'Очарование 1 ур.',  desc:'Одно слово — приказ (спасбросок Мудрости).'},
+      {id:'ps6',name:'Героизм',              school:'Очарование 1 ур.',  desc:'Иммунитет к страху + временные хп/ход. Концентрация 1 мин.'},
+      {id:'ps7',name:'Кара мести',           school:'Воплощение 1 ур.',  desc:'Бонусное действие после попадания: +2к6 урона.'},
+      {id:'ps8',name:'Гром небесный',        school:'Воплощение 1 ур.',  desc:'2к6 грома при попадании, цель сбита с ног (спасбросок Силы).'},
+      {id:'ps9',name:'Защита от зла и добра',school:'Ограждение 1 ур.',  desc:'Нечисть и аномалии не могут вас очаровать. 10 мин.'},
+      {id:'ps10',name:'Обнаружение зла',     school:'Прорицание 1 ур.',  desc:'Знаете о нечисти и небожителях в 30 фт. 10 мин.'},
+    ]
+  },
+  ranger:{
+    cantrips:[],
+    spells1:[
+      {id:'rs1',name:'Животная дружба',    school:'Очарование 1 ур.',   desc:'Очаровываете зверя с Инт ≤ 3 на 24 часа.'},
+      {id:'rs2',name:'Удар охотника',      school:'Воплощение 1 ур.',   desc:'+1к6 к каждому попаданию по цели. Концентрация 1 час.'},
+      {id:'rs3',name:'Детектирование яда', school:'Прорицание 1 ур.',   desc:'Яды и ядовитые существа в 30 фт. 10 мин.'},
+      {id:'rs4',name:'Тревога',           school:'Ограждение 1 ур.',   desc:'Охраняет область 20 фт. — тревога при пересечении. 8 часов.'},
+      {id:'rs5',name:'Туманный шаг',       school:'Преобразование 1 ур.',desc:'Бонусным действием телепортируетесь до 30 фт.'},
+      {id:'rs6',name:'Длинный шаг',        school:'Преобразование 1 ур.',desc:'Скорость +10 фт., прыжки удваиваются. 1 час.'},
+      {id:'rs7',name:'Разговор с животными',school:'Прорицание 1 ур.',  desc:'Говорите со зверями. Ритуал.'},
+      {id:'rs8',name:'Прыжок',            school:'Преобразование 1 ур.',desc:'Утраивает дальность прыжка. 1 мин.'},
+      {id:'rs9',name:'Поиск магии',        school:'Прорицание 1 ур.',   desc:'Ощущаете магию в 30 фт. Ритуал, 10 мин.'},
+      {id:'rs10',name:'Ловчая яма',        school:'Воплощение 1 ур.',   desc:'Ловушка замедляет и удерживает (спасбросок Силы).'},
+    ]
+  },
+  sorcerer:{
+    cantrips:[
+      {id:'sc1',name:'Огненный снаряд', school:'Воплощение', desc:'Дальняя атака: 1к10 огненного урона.'},
+      {id:'sc2',name:'Ледяной луч',    school:'Воплощение', desc:'3 луча по 1к6 холодного. 1 попадание — скорость цели 0.'},
+      {id:'sc3',name:'Молния',         school:'Воплощение', desc:'Дальняя атака: 1к12 молниевого урона.'},
+      {id:'sc4',name:'Малое волшебство',school:'Преобразование',desc:'Незначительный магический эффект.'},
+      {id:'sc5',name:'Кислотный всплеск',school:'Воплощение',desc:'1к8 кислотного, одна или две рядом стоящих цели (спасбросок Ловкости).'},
+      {id:'sc6',name:'Ядовитый плевок', school:'Воплощение', desc:'Дальняя атака: 1к12 урона ядом.'},
+      {id:'sc7',name:'Сарказм',         school:'Очарование', desc:'1к4 психического; цель атакует с помехой до следующего хода.'},
+      {id:'sc8',name:'Истинный удар',   school:'Прорицание', desc:'Следующая атака по цели — с преимуществом.'},
+    ],
+    spells1:[
+      {id:'ss1',name:'Волшебный снаряд',school:'Воплощение 1 ур.',  desc:'3 болта по 1к4+1. Автоматически попадают.'},
+      {id:'ss2',name:'Щит',            school:'Ограждение 1 ур.',  desc:'Реакция: +5 КД до следующего хода.'},
+      {id:'ss3',name:'Ожог',           school:'Воплощение 1 ур.',  desc:'3к10 огня. Существо горит (1к10 огня/ход, спасбросок Ловкости).'},
+      {id:'ss4',name:'Усыпление',      school:'Очарование 1 ур.',  desc:'Усыпляет существ с суммарными хп до 5к8.'},
+      {id:'ss5',name:'Очарование личности',school:'Очарование 1 ур.',desc:'Цель считает вас другом на 1 час (спасбросок Мудрости).'},
+      {id:'ss6',name:'Туманный шаг',   school:'Преобразование 1 ур.',desc:'Бонусным действием телепортируетесь на 30 фт.'},
+      {id:'ss7',name:'Волна грома',    school:'Воплощение 1 ур.',  desc:'2к8 грома в 15-фт кубе, существа отброшены на 10 фт.'},
+      {id:'ss8',name:'Пылающие руки',  school:'Воплощение 1 ур.',  desc:'Конус 15 фт.: 3к6 огня (спасбросок Ловкости — половина).'},
+      {id:'ss9',name:'Маскировка',     school:'Иллюзия 1 ур.',    desc:'Меняете внешнее обличие на 1 час.'},
+      {id:'ss10',name:'Хромота',       school:'Некромантия 1 ур.', desc:'Скорость цели −1к4×10 фт. (спасбросок Телосложения).'},
+    ]
+  },
+  warlock:{
+    cantrips:[
+      {id:'wkc1',name:'Мистический заряд',school:'Воплощение', desc:'Основная атака колдуна: 1к10 тайного урона (дальность 120 фт., использует Харизму).'},
+      {id:'wkc2',name:'Малое волшебство', school:'Преобразование',desc:'Незначительный магический эффект.'},
+      {id:'wkc3',name:'Сарказм',          school:'Очарование', desc:'1к4 психического; помеха на атаку до следующего хода.'},
+      {id:'wkc4',name:'Истинный удар',    school:'Прорицание', desc:'Следующая атака с преимуществом.'},
+    ],
+    spells1:[
+      {id:'wks1',name:'Шёпот теней',         school:'Очарование 1 ур.',  desc:'Страх: помеха на атаки (спасбросок Мудрости). 1 мин.'},
+      {id:'wks2',name:'Армор тьмы',          school:'Ограждение 1 ур.',  desc:'КД = 13 + мод. Ловкости. 8 часов.'},
+      {id:'wks3',name:'Очарование личности', school:'Очарование 1 ур.',  desc:'Цель считает вас другом (спасбросок Мудрости). 1 час.'},
+      {id:'wks4',name:'Адское возмездие',    school:'Воплощение 1 ур.',  desc:'Реакция: 2к10 огненного атаковавшему.'},
+      {id:'wks5',name:'Защита от зла',       school:'Ограждение 1 ур.',  desc:'Существа выбранного типа не могут вас очаровать. 10 мин.'},
+      {id:'wks6',name:'Тьма',               school:'Воплощение 1 ур.',  desc:'Магическая тьма в радиусе 15 фт. 10 мин.'},
+      {id:'wks7',name:'Шум безумия',         school:'Очарование 1 ур.',  desc:'Жертва не может реагировать (спасбросок Мудрости). Концентрация 1 мин.'},
+      {id:'wks8',name:'Путы преисподней',    school:'Воплощение 1 ур.',  desc:'Адские цепи удерживают существо (спасбросок Силы). 1 мин.'},
+      {id:'wks9',name:'Жгучий взор',         school:'Воплощение 1 ур.',  desc:'Цель получает 2к6 огня/ход концентрации.'},
+      {id:'wks10',name:'Волшебный снаряд',   school:'Воплощение 1 ур.',  desc:'3 болта по 1к4+1. Автоматически попадают.'},
+    ]
+  },
+  wizard:{
+    cantrips:[
+      {id:'wzc1',name:'Огненный снаряд', school:'Воплощение', desc:'Дальняя атака: 1к10 огненного урона.'},
+      {id:'wzc2',name:'Ледяной луч',    school:'Воплощение', desc:'3 луча по 1к6 холодного. 1 попадание — скорость 0.'},
+      {id:'wzc3',name:'Молния',         school:'Воплощение', desc:'Дальняя атака: 1к12 молниевого.'},
+      {id:'wzc4',name:'Малое волшебство',school:'Преобразование',desc:'Незначительный магический эффект.'},
+      {id:'wzc5',name:'Кислотный всплеск',school:'Воплощение',desc:'1к8 кислоты, одна или две рядом стоящих цели.'},
+      {id:'wzc6',name:'Мёрзлое прикосновение',school:'Некромантия',desc:'1к8 некротического. Цель не может лечиться до вашего следующего хода.'},
+    ],
+    spells1:[
+      {id:'wzs1',name:'Волшебный снаряд',school:'Воплощение 1 ур.',   desc:'3 болта по 1к4+1. Автоматически попадают.'},
+      {id:'wzs2',name:'Щит',            school:'Ограждение 1 ур.',   desc:'Реакция: +5 КД до следующего хода.'},
+      {id:'wzs3',name:'Ожог',           school:'Воплощение 1 ур.',   desc:'3к10 огня. Горит (1к10 огня/ход).'},
+      {id:'wzs4',name:'Туманный шаг',   school:'Преобразование 1 ур.',desc:'Бонусным действием телепортируетесь на 30 фт.'},
+      {id:'wzs5',name:'Волна грома',    school:'Воплощение 1 ур.',   desc:'2к8 грома в 15-фт кубе, отброс на 10 фт.'},
+      {id:'wzs6',name:'Пылающие руки',  school:'Воплощение 1 ур.',   desc:'Конус 15 фт.: 3к6 огня (половина при спасброске).'},
+      {id:'wzs7',name:'Усыпление',      school:'Очарование 1 ур.',   desc:'Усыпляет существ с суммарными хп до 5к8.'},
+      {id:'wzs8',name:'Опознание',      school:'Прорицание 1 ур.',   desc:'Узнаёте свойства предмета или заклинания. Ритуал.'},
+      {id:'wzs9',name:'Маскировка',     school:'Иллюзия 1 ур.',     desc:'Меняете внешность на 1 час.'},
+      {id:'wzs10',name:'Поиск магии',   school:'Прорицание 1 ур.',   desc:'Ощущаете магию в 30 фт. Ритуал.'},
+      {id:'wzs11',name:'Понимание языков',school:'Прорицание 1 ур.', desc:'Понимаете все языки на 1 час. Ритуал.'},
+      {id:'wzs12',name:'Хромота',       school:'Некромантия 1 ур.',  desc:'Скорость цели −1к4×10 фт. (спасбросок Телосложения).'},
+    ]
+  }
+};
+
+const WEAPONS = {
+  simple_melee:[
+    {id:'club',        name:'Дубина',       dmg:'1к4',  type:'дробящий', props:'Лёгкое',                         finesse:false,ranged:false},
+    {id:'dagger',      name:'Кинжал',       dmg:'1к4',  type:'колющий',  props:'Финессное, Лёгкое, Метательное', finesse:true, ranged:false},
+    {id:'handaxe',     name:'Ручной топор', dmg:'1к6',  type:'рубящий',  props:'Лёгкое, Метательное',            finesse:false,ranged:false},
+    {id:'javelin',     name:'Дротик',       dmg:'1к6',  type:'колющий',  props:'Метательное',                    finesse:false,ranged:false},
+    {id:'quarterstaff',name:'Посох',        dmg:'1к6',  type:'дробящий', props:'Универсальное (1к8)',             finesse:false,ranged:false},
+    {id:'spear',       name:'Копьё',        dmg:'1к6',  type:'колющий',  props:'Универсальное, Метательное',     finesse:false,ranged:false},
+    {id:'mace',        name:'Булава',       dmg:'1к6',  type:'дробящий', props:'',                               finesse:false,ranged:false},
+  ],
+  simple_ranged:[
+    {id:'crossbow_light',name:'Лёгкий арбалет',dmg:'1к8',type:'колющий',props:'Двуручное, Перезарядка',finesse:false,ranged:true},
+    {id:'shortbow',      name:'Короткий лук',  dmg:'1к6',type:'колющий',props:'Двуручное',              finesse:false,ranged:true},
+  ],
+  martial_melee:[
+    {id:'longsword', name:'Длинный меч',   dmg:'1к8',  type:'рубящий', props:'Универсальное (1к10)', finesse:false,ranged:false},
+    {id:'rapier',    name:'Рапира',        dmg:'1к8',  type:'колющий', props:'Финессное',            finesse:true, ranged:false},
+    {id:'greatsword',name:'Двуручный меч', dmg:'2к6',  type:'рубящий', props:'Двуручное, Тяжёлое',  finesse:false,ranged:false},
+    {id:'battleaxe', name:'Боевой топор',  dmg:'1к8',  type:'рубящий', props:'Универсальное (1к10)',finesse:false,ranged:false},
+    {id:'shortsword',name:'Короткий меч',  dmg:'1к6',  type:'колющий', props:'Финессное, Лёгкое',   finesse:true, ranged:false},
+    {id:'warhammer', name:'Боевой молот',  dmg:'1к8',  type:'дробящий',props:'Универсальное (1к10)',finesse:false,ranged:false},
+    {id:'greataxe',  name:'Секира',        dmg:'1к12', type:'рубящий', props:'Двуручное, Тяжёлое',  finesse:false,ranged:false},
+    {id:'flail',     name:'Цеп',           dmg:'1к8',  type:'дробящий',props:'',                    finesse:false,ranged:false},
+  ],
+  martial_ranged:[
+    {id:'longbow',      name:'Длинный лук',   dmg:'1к8',type:'колющий',props:'Двуручное, Тяжёлое',  finesse:false,ranged:true},
+    {id:'crossbow_hand',name:'Ручной арбалет',dmg:'1к6',type:'колющий',props:'Лёгкое, Перезарядка', finesse:false,ranged:true},
+  ]
+};
+
+const ARMOR=[
+  {id:'none',       name:'Без доспеха',        ac:0,  type:'none',  desc:'КД по формуле класса',              cat:'none'},
+  {id:'padded',     name:'Стёганый доспех',     ac:11, type:'light', desc:'КД 11 + мод. Ловкости',            cat:'Лёгкие'},
+  {id:'leather',    name:'Кожаный доспех',      ac:11, type:'light', desc:'КД 11 + мод. Ловкости',            cat:'Лёгкие'},
+  {id:'studded',    name:'Клёпаный кожаный',    ac:12, type:'light', desc:'КД 12 + мод. Ловкости',            cat:'Лёгкие'},
+  {id:'hide',       name:'Шкурный доспех',      ac:12, type:'medium',desc:'КД 12 + мод. Ловкости (макс. +2)', cat:'Средние'},
+  {id:'chainshirt', name:'Кольчужная рубаха',   ac:13, type:'medium',desc:'КД 13 + мод. Ловкости (макс. +2)', cat:'Средние'},
+  {id:'scalemail',  name:'Чешуйчатый доспех',   ac:14, type:'medium',desc:'КД 14 + мод. Ловкости (макс. +2)', cat:'Средние'},
+  {id:'halfplate',  name:'Полудоспех',           ac:15, type:'medium',desc:'КД 15 + мод. Ловкости (макс. +2)', cat:'Средние'},
+  {id:'ringmail',   name:'Кольчатый доспех',     ac:14, type:'heavy', desc:'КД 14, Ловкость не учитывается',   cat:'Тяжёлые'},
+  {id:'chainmail',  name:'Кольчуга',             ac:16, type:'heavy', desc:'КД 16. Треб. Сила 13',              cat:'Тяжёлые'},
+  {id:'splint',     name:'Клёпаный доспех',      ac:17, type:'heavy', desc:'КД 17. Треб. Сила 15',              cat:'Тяжёлые'},
+  {id:'plate',      name:'Латный доспех',        ac:18, type:'heavy', desc:'КД 18. Треб. Сила 15',              cat:'Тяжёлые'},
+];
+
+// STATE
+let state={step:0,race:null,cls:null,background:null,stats:{STR:8,DEX:8,CON:8,INT:8,WIS:8,CHA:8},selectedCantrips:[],selectedSpells:[],selectedWeapons:[],selectedArmor:'none',selectedShield:false,startGold:0};
+let STEPS=[];
+
+function rebuildSteps(){
+  const s=[{id:'race',label:'Раса'},{id:'class',label:'Класс'},{id:'background',label:'Предыстория'},{id:'stats',label:'Характеристики'}];
+  const c=CLASSES.find(x=>x.id===state.cls);
+  if(c&&c.isMagic) s.push({id:'spells',label:'Заклинания'});
+  s.push({id:'equipment',label:'Снаряжение'});
+  s.push({id:'sheet',label:'Лист персонажа'});
+  STEPS=s;
+}
+rebuildSteps();
+
+// HELPERS
+function mod(v){return Math.floor((v-10)/2);}
+function modStr(v){const m=mod(v);return m>=0?'+'+m:''+m;}
+function spentPts(){return ['STR','DEX','CON','INT','WIS','CHA'].reduce((s,k)=>s+(POINT_COST[state.stats[k]]||0),0);}
+function rem(){return 27-spentPts();}
+
+function totalStats(){
+  const r=RACES.find(x=>x.id===state.race);
+  const t={...state.stats};
+  if(r&&r.bonuses) Object.entries(r.bonuses).forEach(([k,v])=>{t[k]=(t[k]||0)+v;});
+  return t;
+}
+
+function calcWeaponStats(w){
+  const t=totalStats(); const prof=2;
+  let sm=w.ranged?mod(t.DEX):w.finesse?Math.max(mod(t.STR),mod(t.DEX)):mod(t.STR);
+  const hit=sm+prof;
+  const hitStr='к20 '+(hit>=0?'+ '+hit:hit);
+  const dmgStr=sm>0?w.dmg+' + '+sm:sm<0?w.dmg+' '+sm:w.dmg;
+  const statN=w.ranged?'Ловкость':w.finesse?'Сила/Ловк.':'Сила';
+  return{hitStr,dmgStr,statN};
+}
+
+function calcAC(){
+  const c=CLASSES.find(x=>x.id===state.cls);
+  const t=totalStats();
+  const a=ARMOR.find(x=>x.id===state.selectedArmor);
+  const sh=state.selectedShield?2:0;
+  if(!a||a.id==='none'){
+    if(c?.acFormula==='barb') return 10+mod(t.DEX)+mod(t.CON)+sh;
+    if(c?.acFormula==='monk') return 10+mod(t.DEX)+mod(t.WIS)+sh;
+    return 10+mod(t.DEX)+sh;
+  }
+  if(a.type==='light') return a.ac+mod(t.DEX)+sh;
+  if(a.type==='medium') return a.ac+Math.min(2,mod(t.DEX))+sh;
+  return a.ac+sh;
+}
+function calcHP(){const c=CLASSES.find(x=>x.id===state.cls);if(!c)return'—';return c.hitDie+mod(totalStats().CON);}
+function calcSpeed(){const r=RACES.find(x=>x.id===state.race);return r?r.speed:'—';}
+function calcInit(){return modStr(totalStats().DEX);}
+
+function getWeapons(){
+  const c=CLASSES.find(x=>x.id===state.cls);
+  if(!c) return[];
+  const pr=c.prof.weapons;
+  const hasMartial=pr.some(p=>p.includes('Воинское'));
+  const hasSimple=hasMartial||pr.some(p=>p.includes('Простое'));
+  const named=pr.filter(p=>!p.includes('оружие'));
+  const all=[
+    ...WEAPONS.simple_melee.map(w=>({...w,grp:'Простое ближнее'})),
+    ...WEAPONS.simple_ranged.map(w=>({...w,grp:'Простое дальнее'})),
+    ...WEAPONS.martial_melee.map(w=>({...w,grp:'Воинское ближнее'})),
+    ...WEAPONS.martial_ranged.map(w=>({...w,grp:'Воинское дальнее'})),
+  ];
+  return all.filter(w=>{
+    if(hasMartial) return true;
+    if(hasSimple&&(w.grp.includes('Простое'))) return true;
+    if(named.some(n=>w.name.includes(n.replace(/[ыеауий]$/,'')))) return true;
+    return false;
+  });
+}
+
+function getArmor(){
+  const c=CLASSES.find(x=>x.id===state.cls);
+  if(!c) return[ARMOR[0]];
+  const pr=c.prof.armor;
+  const hasAll=pr.some(p=>p.includes('Все'));
+  const hasHeavy=hasAll||pr.some(p=>p.includes('Тяжёл'));
+  const hasMed=hasHeavy||pr.some(p=>p.includes('Сред'));
+  const hasLight=hasMed||pr.some(p=>p.includes('Лёгк'));
+  return ARMOR.filter(a=>{
+    if(a.id==='none') return true;
+    if(a.cat==='Лёгкие') return hasLight;
+    if(a.cat==='Средние') return hasMed;
+    if(a.cat==='Тяжёлые') return hasHeavy;
+    return false;
+  });
+}
+function hasShieldProf(){const c=CLASSES.find(x=>x.id===state.cls);return c&&c.prof.armor.some(p=>p.includes('Щит'));}
+
+function rollGold(){state.startGold=Math.floor(Math.random()*50)+1;}
+
+function randomize(){
+  state.race=RACES[Math.floor(Math.random()*RACES.length)].id;
+  state.cls=CLASSES[Math.floor(Math.random()*CLASSES.length)].id;
+  state.background=BACKGROUNDS[Math.floor(Math.random()*BACKGROUNDS.length)].id;
+  ['STR','DEX','CON','INT','WIS','CHA'].forEach(k=>state.stats[k]=8);
+  let pts=27;
+  ['STR','DEX','CON','INT','WIS','CHA'].forEach(k=>{
+    while(pts>0&&state.stats[k]<15){
+      const nxt=state.stats[k]+1;
+      const cost=(POINT_COST[nxt]||0)-(POINT_COST[state.stats[k]]||0);
+      if(cost<=pts){state.stats[k]++;pts-=cost;}else break;
+    }
+  });
+  const c=CLASSES.find(x=>x.id===state.cls);
+  if(c&&c.isMagic){
+    const sp=SPELLS[state.cls]||{};
+    state.selectedCantrips=(sp.cantrips||[]).slice(0,c.cantripsKnown||0).map(s=>s.id);
+    state.selectedSpells=(sp.spells1||[]).slice(0,c.spellsKnown||2).map(s=>s.id);
+  }
+  const ww=getWeapons();
+  state.selectedWeapons=ww.slice(0,Math.min(2,ww.length)).map(w=>w.id);
+  const aa=getArmor();
+  state.selectedArmor=aa[aa.length-1]?.id||'none';
+  state.selectedShield=hasShieldProf();
+  rollGold();
+  rebuildSteps();
+  state.step=STEPS.length-1;
+  render();
+}
+
+// RENDER
+function render(){rebuildSteps();renderProgress();renderSummary();renderStep();renderNav();}
+
+function renderProgress(){
+  document.getElementById('progressSteps').innerHTML=STEPS.map((s,i)=>{
+    const cls=i<state.step?'done':i===state.step?'active':'';
+    const sep=i<STEPS.length-1?'<div class="ps-line"></div>':'';
+    return `<div class="ps-item ${cls}" onclick="goTo(${i})"><div class="ps-dot">${i<state.step?'✓':i+1}</div><div class="ps-label">${s.label}</div></div>${sep}`;
+  }).join('');
+}
+
+function renderSummary(){
+  const r=RACES.find(x=>x.id===state.race);
+  const c=CLASSES.find(x=>x.id===state.cls);
+  const bg=BACKGROUNDS.find(x=>x.id===state.background);
+  let chips='';
+  if(r) chips+=`<div class="sb-chip"><span class="sb-label">Раса:</span><span class="sb-val">${r.name}</span></div>`;
+  if(c) chips+=`<div class="sb-chip"><span class="sb-label">Класс:</span><span class="sb-val">${c.name}</span></div>`;
+  if(bg) chips+=`<div class="sb-chip"><span class="sb-label">Предыстория:</span><span class="sb-val">${bg.name}</span></div>`;
+  if(c){const t=totalStats();chips+=`<div class="sb-chip"><span class="sb-label">КД:</span><span class="sb-val">${calcAC()}</span></div><div class="sb-chip"><span class="sb-label">ХП:</span><span class="sb-val">${calcHP()}</span></div>`;}
+  document.getElementById('summaryBar').innerHTML=chips||'<span style="font-size:12px;color:#9c7d50;font-style:italic;">Выберите расу и класс, чтобы начать</span>';
+}
+
+function renderNav(){
+  document.getElementById('btnBack').style.visibility=state.step>0?'visible':'hidden';
+  const last=state.step===STEPS.length-1;
+  document.getElementById('btnNext').textContent=last?'— Готово —':'Далее →';
+  document.getElementById('btnNext').disabled=last;
+}
+
+function renderStep(){
+  const id=STEPS[state.step]?.id;
+  const el=document.getElementById('stepContainer');
+  if(id==='race') el.innerHTML=renderRace();
+  else if(id==='class') el.innerHTML=renderClass();
+  else if(id==='background') el.innerHTML=renderBg();
+  else if(id==='stats') el.innerHTML=renderStats();
+  else if(id==='spells') el.innerHTML=renderSpells();
+  else if(id==='equipment') el.innerHTML=renderEquip();
+  else if(id==='sheet') el.innerHTML=renderSheet();
+  bindEvents(id);
+}
+
+function cardImg(img,emoji){
+  return `<div class="card-img-wrap">
+    <span class="card-emoji" style="font-size:2.8rem;">${emoji}</span>
+    <img src="${img}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;"
+      onload="this.previousElementSibling.style.display='none'"
+      onerror="this.style.display='none'">
+  </div>`;
+}
+
+function renderRace(){
+  return `<div class="step-header"><h2>Выбор расы</h2><p>Раса определяет природные способности и бонусы к характеристикам</p></div>
+  <div class="card-grid">${RACES.map(r=>`
+    <div class="choice-card ${state.race===r.id?'selected':''}" data-race="${r.id}" style="position:relative;">
+      <div class="card-chk">✓</div>
+      ${cardImg(r.img,r.emoji)}
+      <div class="card-body">
+        <div class="card-name">${r.name}</div>
+        <div class="card-desc">${r.desc}</div>
+        <div class="card-tags">
+          <span class="tag">Скорость: ${r.speed} фт.</span>
+          ${Object.entries(r.bonuses).map(([k,v])=>`<span class="tag bonus">+${v} ${STAT_NAMES[k]}</span>`).join('')}
         </div>
-        <div id="sheet-content"></div>
-        <div class="pdf-footer">
-            Создано в Fast D&D Builder • <span id="pdf-date"></span>
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+
+function renderClass(){
+  return `<div class="step-header"><h2>Выбор класса</h2><p>Класс определяет боевые умения и стиль игры</p></div>
+  <div class="card-grid wide">${CLASSES.map(c=>`
+    <div class="choice-card ${state.cls===c.id?'selected':''}" data-cls="${c.id}" style="position:relative;">
+      <div class="card-chk">✓</div>
+      ${cardImg(c.img,c.emoji)}
+      <div class="card-body">
+        <div class="card-name">${c.name}</div>
+        <div class="card-desc">${c.tagline}</div>
+        <div class="card-tags">
+          <span class="tag">КД: к${c.hitDie}</span>
+          ${c.isMagic?'<span class="tag magic">✦ Магия</span>':''}
         </div>
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+
+function renderBg(){
+  return `<div class="step-header"><h2>Предыстория</h2><p>Кем вы были до приключений — даёт навыки и особое умение</p></div>
+  <div class="bg-list">${BACKGROUNDS.map(b=>`
+    <div class="bg-card ${state.background===b.id?'selected':''}" data-bg="${b.id}">
+      <div class="bg-card-name">${b.name}</div>
+      <div class="bg-card-desc">${b.desc}</div>
+      <div class="bg-card-desc" style="margin-top:5px;font-style:italic;color:#9c7d50;">${b.feature}</div>
+      <div class="bg-card-skills">Навыки: ${b.skills}</div>
+    </div>`).join('')}
+  </div>`;
+}
+
+function renderStats(){
+  const c=CLASSES.find(x=>x.id===state.cls);
+  const r=RACES.find(x=>x.id===state.race);
+  const left=rem();
+  const pct=Math.round((1-left/27)*100);
+  const rows=['STR','DEX','CON','INT','WIS','CHA'].map(k=>{
+    const v=state.stats[k];
+    const rb=r?.bonuses?.[k]||0;
+    const total=v+rb;
+    const hint=c?.statHints?.[k]||'';
+    const canDown=v>8;
+    const canUp=v<15&&rem()>=((POINT_COST[v+1]||0)-(POINT_COST[v]||0));
+    return `<div class="pb-stat-row">
+      <div class="pb-stat-name">${STAT_NAMES[k]}${hint?`<div class="pb-stat-hint">${hint}</div>`:''}
+      </div>
+      <button class="pb-btn" onclick="chgStat('${k}',-1)" ${canDown?'':'disabled'}>−</button>
+      <div class="pb-val">${v}</div>
+      <button class="pb-btn" onclick="chgStat('${k}',1)" ${canUp?'':'disabled'}>+</button>
+      <div class="pb-mod">${modStr(v)}</div>
+      ${rb>0
+        ?`<span class="race-bonus-note">+${rb} раса → <b>${total}</b> (${modStr(total)})</span>`
+        :`<span class="pb-cost">${POINT_COST[v]||0} оч.</span>`
+      }
+    </div>`;
+  }).join('');
+  return `<div class="step-header"><h2>Характеристики</h2><p>Метод «Закупка очков» — 27 очков, максимум 15 в одном стате</p></div>
+  <div class="pointbuy-wrap">
+    <div class="pb-points">
+      <div><div class="pb-points-val">${left}</div><div class="pb-points-label">очков осталось из 27</div></div>
+      <div class="pb-points-bar"><div class="pb-points-fill" style="width:${pct}%"></div></div>
     </div>
+    ${rows}
+  </div>`;
+}
 
-    <script>
-        const classEmojis = { barbarian: '🪓', bard: '🎵', cleric: '⚕️', druid: '🌿', fighter: '⚔️', monk: '👊', paladin: '️', ranger: '🏹', rogue: '🗡️', sorcerer: '', warlock: '💀', wizard: '📚' };
-        const raceEmojis = { human: '🧑', elf: '🧝', dwarf: '🧔', gnome: '🧚', halfling: '', halfelf: '🧝♂️', halforc: '👹', tiefling: '😈', dragonborn: '🐉' };
-        const classIcons = { barbarian: 'images/classes/barbarian.png', bard: 'images/classes/bard.png', cleric: 'images/classes/cleric.png', druid: 'images/classes/druid.png', fighter: 'images/classes/fighter.png', monk: 'images/classes/monk.png', paladin: 'images/classes/paladin.png', ranger: 'images/classes/ranger.png', rogue: 'images/classes/rogue.png', sorcerer: 'images/classes/sorcerer.png', warlock: 'images/classes/warlock.png', wizard: 'images/classes/wizard.png' };
-        const raceIcons = { human: 'images/races/human.png', elf: 'images/races/elf.png', dwarf: 'images/races/dwarf.png', gnome: 'images/races/gnome.png', halfling: 'images/races/halfling.png', halfelf: 'images/races/halfelf.png', halforc: 'images/races/halforc.png', tiefling: 'images/races/tiefling.png', dragonborn: 'images/races/dragonborn.png' };
+function renderSpells(){
+  const c=CLASSES.find(x=>x.id===state.cls);
+  if(!c||!c.isMagic) return '<p>Этот класс не использует заклинания.</p>';
+  const sp=SPELLS[state.cls]||{cantrips:[],spells1:[]};
+  const maxC=c.cantripsKnown||0, maxS=c.spellsKnown||0;
+  let h=`<div class="step-header"><h2>Заклинания</h2><p>Выберите заговоры и заклинания 1 уровня для ${c.name}а</p></div>
+  <div class="spell-info-bar">
+    <span>Заговоры: <strong>${state.selectedCantrips.length} / ${maxC}</strong></span>
+    <span>Заклинания 1 ур.: <strong>${state.selectedSpells.length} / ${maxS}</strong></span>
+    <span>Характеристика: <strong>${STAT_NAMES[c.spellAbility]}</strong></span>
+    <span>Ячейки: <strong>${c.slots?.[0]||0} × 1 ур.</strong></span>
+  </div>`;
+  if(sp.cantrips.length&&maxC>0){
+    h+=`<div class="spell-section"><div class="spell-section-title">Заговоры — выберите ${maxC}</div><div class="spells-grid">
+    ${sp.cantrips.map(s=>`<div class="spell-card ${state.selectedCantrips.includes(s.id)?'selected':''}" data-cantrip="${s.id}">
+      <div class="spell-name">${s.name}</div><div class="spell-school">${s.school}</div><div class="spell-desc">${s.desc}</div></div>`).join('')}
+    </div></div>`;
+  }
+  if(sp.spells1.length&&maxS>0){
+    h+=`<div class="spell-section"><div class="spell-section-title">Заклинания 1 уровня — выберите ${maxS}</div><div class="spells-grid">
+    ${sp.spells1.map(s=>`<div class="spell-card ${state.selectedSpells.includes(s.id)?'selected':''}" data-spell="${s.id}">
+      <div class="spell-name">${s.name}</div><div class="spell-school">${s.school}</div><div class="spell-desc">${s.desc}</div></div>`).join('')}
+    </div></div>`;
+  }
+  h+=`<div style="margin-top:.75rem;"><a class="link-ref" href="https://5e14.ttg.club/" target="_blank">📖 Подробнее на 5e14.ttg.club</a></div>`;
+  return h;
+}
 
-        const races = [
-            { id: 'human', name: 'Человек', bonus: { str: 1, dex: 1, con: 1, int: 1, wis: 1, cha: 1 }, speed: 30, desc: '+1 ко всем характеристикам. Универсальная и амбициозная раса.', abilities: [{ name: 'Дополнительный язык', desc: 'Вы можете говорить, читать и писать на одном дополнительном языке по вашему выбору' }, { name: 'Универсальность адаптации', desc: 'Люди адаптируются к любой ситуации и быстро осваивают новые навыки' }] },
-            { id: 'elf', name: 'Эльф', bonus: { dex: 2 }, speed: 30, desc: '+2 Ловкость. Грациозные долгожители с тёмным зрением.', abilities: [{ name: 'Тёмное зрение', desc: 'Вы видите в темноте на расстоянии до 60 футов как при тусклом свете' }, { name: 'Fey Ancestry', desc: 'Преимущество на спасброски от очарования и иммунитет к магическому сну' }, { name: 'Транс', desc: 'Эльфы не спят, а медитируют 4 часа в день (как 8 часов сна)' }, { name: 'Восприятие', desc: 'Вы владеете навыком Восприятие' }] },
-            { id: 'dwarf', name: 'Дварф', bonus: { con: 2 }, speed: 25, desc: '+2 Телосложение. Крепкие воины и кузнецы.', abilities: [{ name: 'Тёмное зрение', desc: 'Вы видите в темноте на расстоянии до 60 футов' }, { name: 'Дварфийская устойчивость', desc: 'Преимущество на спасброски от яда и сопротивление урону ядом' }, { name: 'Владение оружием', desc: 'Вы владеете боевыми топорами, ручными топорами, лёгкими и тяжёлыми молотами' }] },
-            { id: 'gnome', name: 'Гном', bonus: { int: 2 }, speed: 25, desc: '+2 Интеллект. Маленькие изобретатели с природной магией.', abilities: [{ name: 'Тёмное зрение', desc: 'Вы видите в темноте на расстоянии до 60 футов' }, { name: 'Гномья хитрость', desc: 'Преимущество на спасброски Интеллекта, Мудрости и Харизмы против магии' }] },
-            { id: 'halfling', name: 'Полурослик', bonus: { dex: 2 }, speed: 25, desc: '+2 Ловкость. Удача позволяет перебрасывать 1 на кубах.', abilities: [{ name: 'Удача', desc: 'Когда вы выбрасываете 1 на d20, вы можете перебросить кубик' }, { name: 'Храбрость', desc: 'Преимущество на спасброски от испуга' }, { name: 'Полуросличья хитрость', desc: 'Вы можете проходить сквозь пространство существ, которые больше вас' }] },
-            { id: 'halfelf', name: 'Полуэльф', bonus: { cha: 2 }, speed: 30, desc: '+2 Харизма, +1 к двум на выбор. Универсальные дипломаты.', abilities: [{ name: 'Тёмное зрение', desc: 'Вы видите в темноте на расстоянии до 60 футов' }, { name: 'Fey Ancestry', desc: 'Преимущество от очарования и иммунитет ко магическому сну' }, { name: 'Два навыка', desc: 'Вы владеете двумя навыками на ваш выбор' }] },
-            { id: 'halforc', name: 'Полуорк', bonus: { str: 2, con: 1 }, speed: 30, desc: '+2 Сила, +1 Телосложение. Свирепые воины.', abilities: [{ name: 'Тёмное зрение', desc: 'Вы видите в темноте на расстоянии до 60 футов' }, { name: 'Неистовые атаки', desc: 'Когда вы выбрасываете критический урон, вы можете бросить одну кость урона ещё раз' }, { name: 'Неукротимость', desc: 'Когда вы должны упасть до 0 хитов, вы остаётесь с 1 хитом вместо этого (1/длинный отдых)' }, { name: 'Запугивание', desc: 'Вы владеете навыком Запугивание' }] },
-            { id: 'tiefling', name: 'Тифлинг', bonus: { cha: 2, int: 1 }, speed: 30, desc: '+2 Харизма, +1 Интеллект. Потомки дьяволов с огненной магией.', abilities: [{ name: 'Тёмное зрение', desc: 'Вы видите в темноте на расстоянии до 60 футов' }, { name: 'Адское наследие', desc: 'Вы имеете сопротивление урону огнём' }, { name: 'Адское колдовство', desc: 'Вы знаете заговор Чудотворство. На 3 уровне можете колдовать Адское возмездие 1/день, на 5 уровне — Тьму 1/день' }] },
-            { id: 'dragonborn', name: 'Драконорождённый', bonus: { str: 2, cha: 1 }, speed: 30, desc: '+2 Сила, +1 Харизма. Дыхание дракона и сопротивление стихии.', abilities: [{ name: 'Дыхание дракона', desc: 'Вы можете выдохнуть разрушительную энергию в конусе 5 футов (урон зависит от предка дракона, 1/короткий отдых)' }, { name: 'Сопротивление урону', desc: 'Вы имеете сопротивление одному типу урона в зависимости от вашего драконьего предка' }] }
-        ];
+function renderEquip(){
+  const avW=getWeapons(), avA=getArmor(), hasSh=hasShieldProf();
+  const grps={};
+  avW.forEach(w=>{if(!grps[w.grp])grps[w.grp]=[];grps[w.grp].push(w);});
+  let h=`<div class="step-header"><h2>Снаряжение</h2><p>Выберите оружие (до 2 шт.), доспех и щит по владениям класса</p></div>`;
+  h+=`<div class="equip-section"><div class="equip-title">Оружие <span class="equip-count">(выбрано: ${state.selectedWeapons.length}/2)</span></div>`;
+  for(const [grp,ws] of Object.entries(grps)){
+    h+=`<div class="subgroup-label">${grp}</div><div class="equip-grid">`;
+    h+=ws.map(w=>{
+      const sel=state.selectedWeapons.includes(w.id);
+      const dis=!sel&&state.selectedWeapons.length>=2;
+      const ws2=calcWeaponStats(w);
+      return `<div class="equip-card ${sel?'selected':''} ${dis?'disabled':''}" data-weapon="${w.id}">
+        <div class="equip-name">${w.name}</div>
+        <div class="equip-stat" style="margin:3px 0;">
+          <span style="color:#1d4ed8;">🎯 Попадание: ${ws2.hitStr}</span><br>
+          <span style="color:#b91c1c;">⚔ Урон: ${ws2.dmgStr} ${w.type}</span>
+        </div>
+        <div class="equip-stat" style="font-size:11px;color:#9c7d50;">Стат: ${ws2.statN}${w.props?' · '+w.props:''}</div>
+      </div>`;
+    }).join('');
+    h+=`</div>`;
+  }
+  h+=`</div>`;
+  h+=`<div class="equip-section"><div class="equip-title">Доспех</div><div class="equip-grid">`;
+  h+=avA.map(a=>`<div class="equip-card ${state.selectedArmor===a.id?'selected':''}" data-armor="${a.id}">
+    <div class="equip-name">${a.name}</div>
+    <div class="equip-stat">${a.desc}</div>
+    ${a.cat!=='none'?`<div class="equip-stat" style="font-size:11px;color:#9c7d50;">${a.cat}</div>`:''}
+  </div>`).join('');
+  h+=`</div></div>`;
+  if(hasSh){
+    h+=`<div class="equip-section"><div class="equip-title">Щит</div><div class="equip-grid" style="max-width:210px;">
+    <div class="equip-card ${state.selectedShield?'selected':''}" id="shieldCard">
+      <div class="equip-name">Щит</div><div class="equip-stat">+2 к КД</div>
+    </div></div></div>`;
+  }
+  if(!state.startGold) rollGold();
+  h+=`<div class="gold-roll-box">
+    <div><div class="gold-val" id="goldVal">🪙 ${state.startGold}</div><div class="gold-label">стартовых золотых монет</div></div>
+    <button class="btn btn-secondary" onclick="rollGold();document.getElementById('goldVal').textContent='🪙 '+state.startGold;">🎲 Перебросить</button>
+  </div>`;
+  h+=`<div class="kd-preview">КД: <b style="color:#1d4ed8;">${calcAC()}</b> · ХП: <b style="color:#b91c1c;">${calcHP()}</b> · Инициатива: <b style="color:#166534;">${calcInit()}</b> · Скорость: <b>${calcSpeed()} фт.</b></div>`;
+  return h;
+}
 
-        const classes = [
-            { id: 'barbarian', name: 'Варвар', hitDie: 12, primary: 'Сила', desc: 'Яростный воин, впадающий в неистовство.', magic: false, skills: ['Атлетика', 'Выживание', 'Запугивание', 'Природа', 'Проницательность', 'Работа с животными'], skillsCount: 2, armor: ['Лёгкие доспехи', 'Средние доспехи', 'Щиты'], weapons: ['Простое оружие', 'Воинское оружие'], tools: [], saves: ['Сила', 'Телосложение'], features: [{ name: 'Неистовство', desc: '2/короткий отдых: бонусное действие для преимущества на проверки Силы, сопротивление урону дробящему/колющему/рубящему и +2 к урону оружием Силы' }, { name: 'Защита без доспехов', desc: 'Когда вы не в доспехах, ваш КД = 10 + модификатор Ловкости + модификатор Телосложения' }], statTips: { primary: 'str', secondary: 'con', tip: 'Сила — для атак и урона. Телосложение — для КД без доспехов и хитов.' } },
-            { id: 'bard', name: 'Бард', hitDie: 8, primary: 'Харизма', desc: 'Вдохновляющий маг-музыкант.', magic: true, cantrips: 2, spells1: 4, skills: ['Любые 3 навыка на выбор'], skillsCount: 3, armor: ['Лёгкие доспехи'], weapons: ['Простое оружие', 'Ручные арбалеты', 'Длинные мечи', 'Рапиры', 'Короткие мечи'], tools: ['Три музыкальных инструмента на выбор'], saves: ['Ловкость', 'Харизма'], features: [{ name: 'Вдохновение барда', desc: '3/короткий отдых: бонусное действие, чтобы дать союзнику кость d6, которую он может добавить к проверке характеристики, атаке или спасброску' }, { name: 'Заклинания барда', desc: 'Вы знаете 2 заговора и 4 заклинания 1-го уровня из списка барда' }], statTips: { primary: 'cha', secondary: 'dex', tip: 'Харизма — для заклинаний и Вдохновения. Ловкость — для КД и инициативы.' } },
-            { id: 'fighter', name: 'Воин', hitDie: 10, primary: 'Сила/Ловкость', desc: 'Мастер оружия и доспехов.', magic: false, skills: ['Акробатика', 'Работа с животными', 'Атлетика', 'История', 'Проницательность', 'Запугивание', 'Восприятие', 'Выживание'], skillsCount: 2, armor: ['Все доспехи', 'Щиты'], weapons: ['Простое оружие', 'Воинское оружие'], tools: [], saves: ['Сила', 'Телосложение'], features: [{ name: 'Боевой стиль', desc: 'Выберите стиль: Защита (+1 к КД), Дуэлянт (+2 к урону одноручным), Дальний бой, Два оружия и др.' }, { name: 'Второе дыхание', desc: '1/короткий отдых: бонусное действие для восстановления 1d10 + уровень хитов' }], statTips: { primary: 'str', secondary: 'con', tip: 'Сила/Ловкость — для атак. Телосложение — для хитов. Выберите один основной стат.' } },
-            { id: 'wizard', name: 'Волшебник', hitDie: 6, primary: 'Интеллект', desc: 'Учёный маг с огромным выбором заклинаний.', magic: true, cantrips: 3, spells1: 6, skills: ['Магия', 'История', 'Проницательность', 'Расследование', 'Медицина', 'Религия'], skillsCount: 2, armor: [], weapons: ['Кинжалы', 'Дротики', 'Посохи', 'Лёгкие арбалеты', 'Короткие мечи', 'Длинные мечи'], tools: [], saves: ['Интеллект', 'Мудрость'], features: [{ name: 'Магическое восстановление', desc: '1/день: бонусное действие для восстановления ячеек заклинаний с суммарным уровнем ≤ половина вашего уровня' }, { name: 'Арканная традиция', desc: 'На 2 уровне вы выберете специализацию: Школа эвокации, иллюзии, некромантии и др.' }], statTips: { primary: 'int', secondary: 'con', tip: 'Интеллект — для заклинаний и КД заклинаний. Телосложение — для концентрации и хитов.' } },
-            { id: 'rogue', name: 'Плут', hitDie: 8, primary: 'Ловкость', desc: 'Мастер скрытности и точных ударов.', magic: false, skills: ['Акробатика', 'Атлетика', 'Обман', 'Проницательность', 'Запугивание', 'Расследование', 'Восприятие', 'Выступление', 'Убеждение', 'Ловкость рук', 'Скрытность'], skillsCount: 4, armor: ['Лёгкие доспехи'], weapons: ['Простое оружие', 'Ручные арбалеты', 'Длинные мечи', 'Рапиры', 'Короткие мечи'], tools: ['Воровские инструменты'], saves: ['Ловкость', 'Интеллект'], features: [{ name: 'Скрытая атака', desc: '1d6 дополнительного урона, если у вас преимущество или союзник рядом с целью. Увеличивается с уровнем' }, { name: 'Воровской жаргон', desc: 'Вы знаете секретный язык воров, понятный только плутам' }], statTips: { primary: 'dex', secondary: 'int', tip: 'Ловкость — для атак, КД, инициативы и Скрытности. Интеллект — для Расследования.' } },
-            { id: 'cleric', name: 'Жрец', hitDie: 8, primary: 'Мудрость', desc: 'Посредник богов. Мастер исцеления.', magic: true, cantrips: 3, spells1: 2, skills: ['История', 'Проницательность', 'Медицина', 'Убеждение', 'Религия'], skillsCount: 2, armor: ['Лёгкие доспехи', 'Средние доспехи', 'Щиты'], weapons: ['Простое оружие'], tools: [], saves: ['Мудрость', 'Харизма'], features: [{ name: 'Божественный домен', desc: 'На 1 уровне вы выберете домен своего божества: Жизнь, Свет, Война, Обман и др., что даёт дополнительные заклинания и способности' }, { name: 'Изгнание нежити', desc: '1/короткий отдых: действие, чтобы заставить нежить в радиусе 30 футов совершить спасбросок или быть уничтоженной/обращённой' }], statTips: { primary: 'wis', secondary: 'con', tip: 'Мудрость — для заклинаний и КД заклинаний. Телосложение — для концентрации.' } },
-            { id: 'ranger', name: 'Следопыт', hitDie: 10, primary: 'Ловкость/Мудрость', desc: 'Охотник диких земель.', magic: true, cantrips: 0, spells1: 2, skills: ['Работа с животными', 'Атлетика', 'Проницательность', 'Расследование', 'Природа', 'Восприятие', 'Скрытность', 'Выживание'], skillsCount: 3, armor: ['Лёгкие доспехи', 'Средние доспехи', 'Щиты'], weapons: ['Простое оружие', 'Воинское оружие'], tools: [], saves: ['Сила', 'Ловкость'], features: [{ name: 'Избранная местность', desc: 'Выберите тип местности: арктическая, лес, горы и др. Вы получаете преимущества при путешествии в ней' }, { name: 'Избранный враг', desc: 'Выберите тип существ: драконы, нежить, великаны и др. Вы получаете преимущество на отслеживание и знание о них' }], statTips: { primary: 'dex', secondary: 'wis', tip: 'Ловкость — для атак и КД. Мудрость — для заклинаний и Восприятия.' } },
-            { id: 'paladin', name: 'Паладин', hitDie: 10, primary: 'Сила/Харизма', desc: 'Святой воин с божественной магией.', magic: true, cantrips: 0, spells1: 2, skills: ['Атлетика', 'Проницательность', 'Запугивание', 'Медицина', 'Убеждение', 'Религия'], skillsCount: 2, armor: ['Все доспехи', 'Щиты'], weapons: ['Простое оружие', 'Воинское оружие'], tools: [], saves: ['Мудрость', 'Харизма'], features: [{ name: 'Божественное чувство', desc: 'Вы можете действием почувствовать присутствие исчадий, нежити или святых в радиусе 60 футов' }, { name: 'Возложение рук', desc: 'У вас есть пул лечения 5×уровень хитов. Вы можете действием коснуться существа и восстановить хиты из пула' }], statTips: { primary: 'str', secondary: 'cha', tip: 'Сила — для атак. Харизма — для заклинаний и КД заклинаний.' } },
-            { id: 'sorcerer', name: 'Чародей', hitDie: 6, primary: 'Харизма', desc: 'Рождённый с магией в крови.', magic: true, cantrips: 4, spells1: 2, skills: ['Магия', 'Обман', 'Проницательность', 'Запугивание', 'Убеждение', 'Религия'], skillsCount: 2, armor: [], weapons: ['Кинжалы', 'Дротики', 'Посохи', 'Лёгкие арбалеты', 'Короткие мечи', 'Длинные мечи'], tools: [], saves: ['Телосложение', 'Харизма'], features: [{ name: 'Источник магии', desc: 'На 2 уровне вы выберете происхождение: Драконья кровь, Дикая магия и др.' }, { name: 'Метамагия', desc: 'На 3 уровне вы получите очки чародея для усиления заклинаний: удвоение, тихое, быстрое и др.' }], statTips: { primary: 'cha', secondary: 'con', tip: 'Харизма — для заклинаний. Телосложение — для концентрации и спасбросков.' } },
-            { id: 'warlock', name: 'Колдун', hitDie: 8, primary: 'Харизма', desc: 'Получил силу от покровителя.', magic: true, cantrips: 2, spells1: 2, skills: ['Магия', 'Обман', 'История', 'Запугивание', 'Расследование', 'Природа', 'Религия'], skillsCount: 2, armor: ['Лёгкие доспехи'], weapons: ['Простое оружие'], tools: [], saves: ['Мудрость', 'Харизма'], features: [{ name: 'Договор покровителя', desc: 'Вы заключили пакт с могущественным существом: Архифея, Исчадия, Великого Древнего и др.' }, { name: 'Мистические тайны', desc: 'Вы знаете 2 заговора и 2 заклинания 1-го уровня. Ячейки восстанавливаются на коротком отдыхе' }], statTips: { primary: 'cha', secondary: 'con', tip: 'Харизма — для заклинаний. Телосложение — для концентрации.' } },
-            { id: 'monk', name: 'Монах', hitDie: 8, primary: 'Ловкость/Мудрость', desc: 'Мастер боевых искусств, использующий ци.', magic: false, skills: ['Акробатика', 'Атлетика', 'История', 'Проницательность', 'Религия', 'Скрытность'], skillsCount: 2, armor: [], weapons: ['Простое оружие', 'Короткие мечи'], tools: ['Один музыкальный инструмент или ремесленный инструмент на выбор'], saves: ['Сила', 'Ловкость'], features: [{ name: 'Боевые искусства', desc: 'Вы можете использовать Ловкость вместо Силы для атак невооружённым ударом и монашеским оружием. Кость урона 1d4' }, { name: 'Невооружённая защита', desc: 'Когда вы без доспехов и щита, ваш КД = 10 + модификатор Ловкости + модификатор Мудрости' }], statTips: { primary: 'dex', secondary: 'wis', tip: 'Ловкость и Мудрость — обе важны для КД, атак и спасбросков. Распределяй поровну.' } },
-            { id: 'druid', name: 'Друид', hitDie: 8, primary: 'Мудрость', desc: 'Жрец природы, способный превращаться в животных.', magic: true, cantrips: 2, spells1: 2, skills: ['Магия', 'Работа с животными', 'Проницательность', 'Медицина', 'Природа', 'Восприятие', 'Религия', 'Выживание'], skillsCount: 2, armor: ['Лёгкие доспехи', 'Средние доспехи', 'Щиты (не металлические)'], weapons: ['Булавы', 'Кинжалы', 'Дротики', 'Посохи', 'Серпы', 'Короткие мечи', 'Копья', 'Скимитары', 'Пращи'], tools: ['Набор травника'], saves: ['Интеллект', 'Мудрость'], features: [{ name: 'Друидический круг', desc: 'На 2 уровне вы выберете круг: Круг земли, Круг луны и др., что даёт дополнительные способности' }, { name: 'Друидический язык', desc: 'Вы знаете секретный язык друидов, понятный только им' }], statTips: { primary: 'wis', secondary: 'con', tip: 'Мудрость — для заклинаний. Телосложение — для концентрации и формы зверя.' } }
-        ];
+function renderSheet(){
+  const r=RACES.find(x=>x.id===state.race);
+  const c=CLASSES.find(x=>x.id===state.cls);
+  const bg=BACKGROUNDS.find(x=>x.id===state.background);
+  const t=totalStats();
+  const allW=[...WEAPONS.simple_melee,...WEAPONS.simple_ranged,...WEAPONS.martial_melee,...WEAPONS.martial_ranged];
+  const selW=allW.filter(w=>state.selectedWeapons.includes(w.id));
+  const armorObj=ARMOR.find(a=>a.id===state.selectedArmor);
+  const spData=c?.isMagic?(SPELLS[state.cls]||{}):{};
+  const allSp=[...(spData.cantrips||[]),...(spData.spells1||[])];
+  const chSp=allSp.filter(s=>state.selectedCantrips.includes(s.id)||state.selectedSpells.includes(s.id));
 
-        const backgrounds = [
-            { id: 'noble', name: 'Благородный', skills: ['История', 'Убеждение'], desc: 'Привык к власти и богатству.', languages: 1 },
-            { id: 'criminal', name: 'Преступник', skills: ['Обман', 'Скрытность'], desc: 'Знает изнанку общества.', tools: ['Воровские инструменты', 'Игральные кости или карты'] },
-            { id: 'sage', name: 'Мудрец', skills: ['Магия', 'История'], desc: 'Посвятил жизнь знаниям.', languages: 2 },
-            { id: 'soldier', name: 'Солдат', skills: ['Атлетика', 'Запугивание'], desc: 'Закалён в боях.', tools: ['Игральные кости или карты', 'Транспорт (лошадь)'] },
-            { id: 'acolyte', name: 'Прислужник', skills: ['Проницательность', 'Религия'], desc: 'Служил в храме.', languages: 2 },
-            { id: 'folkhero', name: 'Народный герой', skills: ['Выживание', 'Работа с животными'], desc: 'Совершил подвиг для простых людей.', tools: ['Ремесленный инструмент (на выбор)'] }
-        ];
+  let h=`<div class="step-header"><h2>Лист персонажа</h2><p>Ваш персонаж готов — все характеристики рассчитаны по правилам D&amp;D 5e</p></div>
+  <div class="sheet-wrap">
+    <div class="sheet-hero">
+      <div class="sheet-portrait">
+        <span style="font-size:2.5rem;">${c?.emoji||'?'}</span>
+        <img src="${c?.img||''}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;"
+          onload="this.previousElementSibling.style.display='none'"
+          onerror="this.style.display='none'">
+      </div>
+      <div class="sheet-hero-info">
+        <div class="sheet-char-name">${r?.name||'—'} ${c?.name||'—'}</div>
+        <div class="sheet-meta">
+          <div class="sheet-meta-item">Раса: <strong>${r?.name||'—'}</strong></div>
+          <div class="sheet-meta-item">Класс: <strong>${c?.name||'—'}</strong></div>
+          <div class="sheet-meta-item">Предыстория: <strong>${bg?.name||'—'}</strong></div>
+          <div class="sheet-meta-item">Уровень: <strong>1</strong></div>
+          <div class="sheet-meta-item">Бонус мастерства: <strong>+2</strong></div>
+        </div>
+        <div class="sheet-vitals">
+          <div class="vital-box"><div class="vital-val hp">${calcHP()}</div><div class="vital-label">Хиты</div></div>
+          <div class="vital-box"><div class="vital-val ac">${calcAC()}</div><div class="vital-label">КД</div></div>
+          <div class="vital-box"><div class="vital-val init">${calcInit()}</div><div class="vital-label">Инициатива</div></div>
+          <div class="vital-box"><div class="vital-val">${calcSpeed()}</div><div class="vital-label">Скорость фт.</div></div>
+          <div class="vital-box"><div class="vital-val">🪙${state.startGold||'—'}</div><div class="vital-label">Золото</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="sheet-body">
+      <div class="sheet-section">
+        <div class="sheet-section-title">Характеристики</div>
+        <div class="stat-grid-sheet">
+          ${['STR','DEX','CON','INT','WIS','CHA'].map(k=>`
+            <div class="stat-block">
+              <div class="stat-block-name">${STAT_NAMES[k]}</div>
+              <div class="stat-block-val">${t[k]}</div>
+              <div class="stat-block-mod">${modStr(t[k])}</div>
+            </div>`).join('')}
+        </div>
+      </div>
+      <div class="sheet-section">
+        <div class="sheet-section-title">Особенности класса</div>
+        <ul class="feature-list">${c?c.features.map(f=>`<li><span class="feat-name">${f.name}</span> — ${f.desc}</li>`).join(''):'<li>—</li>'}</ul>
+      </div>
+      <div class="sheet-section">
+        <div class="sheet-section-title">Расовые черты</div>
+        <ul class="feature-list">${r?r.traits.map(t=>`<li>${t}</li>`).join(''):'<li>—</li>'}</ul>
+      </div>
+      <div class="sheet-section">
+        <div class="sheet-section-title">Снаряжение</div>
+        <ul class="sheet-list">
+          ${selW.map(w=>{const ws=calcWeaponStats(w);return`<li>
+            <span class="sh-name">⚔ ${w.name}</span>
+            <span class="sh-val">
+              <span style="color:#1d4ed8;display:block;">🎯 ${ws.hitStr}</span>
+              <span style="color:#b91c1c;display:block;">💥 ${ws.dmgStr} ${w.type}</span>
+            </span>
+          </li>`;}).join('')}
+          ${armorObj&&armorObj.id!=='none'?`<li><span class="sh-name">🛡 ${armorObj.name}</span><span class="sh-val">${armorObj.desc}</span></li>`:''}
+          ${state.selectedShield?`<li><span class="sh-name">🛡 Щит</span><span class="sh-val">+2 КД</span></li>`:''}
+        </ul>
+      </div>
+      <div class="sheet-section">
+        <div class="sheet-section-title">Владения</div>
+        ${c?`<div style="font-size:12px;color:#5a3e20;line-height:1.7;">
+          <div><span style="color:#9c7d50;">Доспехи: </span>${c.prof.armor.join(', ')||'нет'}</div>
+          <div><span style="color:#9c7d50;">Оружие: </span>${c.prof.weapons.join(', ')}</div>
+          ${c.prof.tools.length?`<div><span style="color:#9c7d50;">Инструменты: </span>${c.prof.tools.join(', ')}</div>`:''}
+        </div>`:''}
+      </div>
+      ${c?.isMagic?`
+      <div class="sheet-section" style="grid-column:1/-1;">
+        <div class="sheet-section-title">Заклинания</div>
+        <div style="margin-bottom:10px;">
+          <div style="font-size:11px;color:#9c7d50;margin-bottom:5px;">Ячейки заклинаний 1 уровня</div>
+          <div class="spell-slots-grid">
+            ${Array.from({length:c.slots?.[0]||0},(_,i)=>`<div class="slot-box"><div class="slot-level">1 ур.</div><div class="slot-count">${i+1}/${c.slots?.[0]||0}</div></div>`).join('')}
+          </div>
+        </div>
+        ${chSp.length?`<ul class="sheet-list">${chSp.map(s=>`<li>
+          <span class="sh-name">${state.selectedCantrips.includes(s.id)?'✦':'✧'} ${s.name} <span style="font-size:11px;color:#9c7d50;">(${s.school})</span></span>
+          <span class="sh-val">${s.desc.slice(0,70)}${s.desc.length>70?'…':''}</span>
+        </li>`).join('')}</ul>
+        <div style="margin-top:6px;"><a class="link-ref" href="https://5e14.ttg.club/" target="_blank">📖 5e14.ttg.club</a></div>`
+        :'<div style="font-size:13px;color:#9c7d50;">Заклинания не выбраны</div>'}
+      </div>`:''}
+    </div>
+  </div>
+  <div style="margin-top:.75rem;display:flex;gap:8px;flex-wrap:wrap;">
+    <button class="btn btn-secondary" onclick="state={step:0,race:null,cls:null,background:null,stats:{STR:8,DEX:8,CON:8,INT:8,WIS:8,CHA:8},selectedCantrips:[],selectedSpells:[],selectedWeapons:[],selectedArmor:'none',selectedShield:false,startGold:0};render();">🔄 Создать нового</button>
+    <button class="btn btn-ghost" onclick="window.print()">🖨 Распечатать</button>
+  </div>`;
+  return h;
+}
 
-        const spells = {
-            bard: { cantrips: [{name:'Зловещая насмешка',desc:'Цель должна преуспеть в спасброске Интеллекта или получить 1d4 психического урона и помеху на следующую атаку'},{name:'Свет',desc:'Предмет излучает яркий свет в радиусе 20 футов и тусклый свет ещё на 20 футов'},{name:'Дружба',desc:'Цель должна преуспеть в спасброске Мудрости или вы получите преимущество на проверки Харизмы против неё'},{name:'Минорная иллюзия',desc:'Создайте звук или изображение объекта в пределах 30 футов'},{name:'Послание',desc:'Вы шепчете сообщение существу в пределах 120 футов, оно может ответить шёпотом'},{name:'Пляшущие огоньки',desc:'Создайте до 4 огней, освещающих область, вы можете перемещать их бонусным действием'}], level1: [{name:'Очарование личности',desc:'Цель должна преуспеть в спасброске Мудрости или быть очарованной вами 1 час'},{name:'Лечащее слово',desc:'Существо восстанавливает 1d4+модификатор заклинательной характеристики хитов'},{name:'Героизм',desc:'Цель получает иммунитет к испугу и временные хиты, равные вашему модификатору Харизмы'},{name:'Обнаружение магии',desc:'Вы чувствуете присутствие магии в радиусе 30 футов на 10 минут'},{name:'Опознание',desc:'Вы узнаёте свойства и способ использования одного магического предмета'},{name:'Громовая волна',desc:'Существа в радиусе 10 футов должны совершить спасбросок Телосложения или получить 2d8 урона звуком и быть оттолкнутыми'},{name:'Исцеление ран',desc:'Существо восстанавливает 1d8+модификатор заклинательной характеристики хитов'},{name:'Невидимость слуги',desc:'Вы создаёте невидимого слугу, который выполняет простые задачи'}] },
-            wizard: { cantrips: [{name:'Огненный снаряд',desc:'Создайте огонь в руке и бросьте его: 1d10 урона огнём, цель должна совершить спасбросок Ловкости'},{name:'Луч холода',desc:'Синий луч наносит 1d8 урона холодом и снижает скорость цели на 10 футов до начала вашего следующего хода'},{name:'Волшебная рука',desc:'Призрачная рука может манипулировать предметами, открывать двери и переносить предметы в пределах 30 футов'},{name:'Послание',desc:'Вы шепчете сообщение существу в пределах 120 футов'},{name:'Свет',desc:'Предмет излучает яркий свет в радиусе 20 футов'},{name:'Пляшущие огоньки',desc:'Создайте до 4 огней, освещающих область'},{name:'Починка',desc:'Вы чините один разрыв или трещину в предмете'},{name:'Зловещая насмешка',desc:'1d4 психического урона и помеха на следующую атаку цели'}], level1: [{name:'Волшебная стрела',desc:'Три магических дротика автоматически попадают и наносят 1d4+1 урона силовым полем каждый'},{name:'Щит',desc:'Реакция: +5 к вашему КД до начала вашего следующего хода, включая против триггерной атаки'},{name:'Сон',desc:'Существа с наименьшим количеством текущих хитов в радиусе 20 футов засыпают'},{name:'Обнаружение магии',desc:'Вы чувствуете присутствие магии в радиусе 30 футов'},{name:'Опознание',desc:'Вы узнаёте свойства магического предмета'},{name:'Доспехи мага',desc:'Ваш базовый КД становится 13 + модификатор Ловкости на 8 часов'},{name:'Туманный шаг',desc:'Вы телепортируетесь на 30 футов в видимое вами место'},{name:'Плавное падение',desc:'Вы замедляете падение существа в радиусе 60 футов'},{name:'Ложная жизнь',desc:'Вы получаете 1d4+4 временных хита на 1 час'},{name:'Прыжок',desc:'Утраиваешь прыжковую способность цели на 1 минуту'}] },
-            cleric: { cantrips: [{name:'Устойчивость',desc:'Цель добавляет 1d4 к одной проверке характеристики по выбору'},{name:'Свет',desc:'Предмет излучает яркий свет в радиусе 20 футов'},{name:'Священное пламя',desc:'Цель должна совершить спасбросок Ловкости или получить 1d8 урона излучением'},{name:'Чудотворство',desc:'Вы создаёте небольшой звук, меняете цвет пламени или создаёте другие мелкие эффекты'},{name:'Сопротивление',desc:'Цель добавляет 1d4 к одному спасброску по выбору'}], level1: [{name:'Лечение ран',desc:'Существо восстанавливает 1d8+модификатор Мудрости хитов'},{name:'Благословение',desc:'До трёх существ добавляют 1d4 к броскам атаки и спасброскам'},{name:'Направление стрелы',desc:'Вы бросаете священный снаряд, наносящий 1d8+модификатор Мудрости урона излучением'},{name:'Убежище',desc:'Существо не может быть атаковано или выбрано целью враждебных заклинаний'},{name:'Щит веры',desc:'Вы создаёте защитный щит с хитами, равными 2×ваш уровень'},{name:'Обнаружение магии',desc:'Вы чувствуете магию в радиусе 30 футов'},{name:'Изгнание нежити',desc:'Нежить в радиусе 30 футов должна совершить спасбросок Мудрости или быть уничтоженной/обращённой'},{name:'Команда',desc:'Вы отдаёте однословную команду существу, которое должно её выполнить'}] },
-            warlock: { cantrips: [{name:'Потусторонний шепот',desc:'Луч силового поля наносит 1d10 урона силовым полем цели'},{name:'Зловещая насмешка',desc:'1d4 психического урона и помеха на следующую атаку'},{name:'Ядовитые брызги',desc:'Конус яда наносит 1d12 урона ядом целям в пределах 15 футов'},{name:'Минорная иллюзия',desc:'Создайте звук или изображение объекта'},{name:'Свет',desc:'Предмет излучает яркий свет'}], level1: [{name:'Адский укор (Hex)',desc:'Вы проклинаете цель: ваши атаки по ней наносят дополнительные 1d6 некротического урона'},{name:'Чары личности',desc:'Существо очаровано вами 1 час'},{name:'Щит',desc:'Реакция: +5 к КД до конца хода'},{name:'Ложная жизнь',desc:'Вы получаете 1d4+4 временных хита на 1 час'},{name:'Невидимость слуги',desc:'Вы создаёте невидимого слугу'},{name:'Туманный шаг',desc:'Телепортация на 30 футов'}] },
-            sorcerer: { cantrips: [{name:'Огненный снаряд',desc:'Бросьте огонь, наносящий 1d10 урона огнём'},{name:'Луч холода',desc:'Синий луч наносит 1d8 урона холодом и замедляет цель'},{name:'Свет',desc:'Предмет излучает яркий свет'},{name:'Потусторонний шепот',desc:'Луч силового поля, 1d10 урона'},{name:'Послание',desc:'Шепчешь сообщение на расстоянии'},{name:'Починка',desc:'Чинишь предмет'}], level1: [{name:'Волшебная стрела',desc:'Три дротика наносят 1d4+1 урона силовым полем'},{name:'Щит',desc:'Реакция: +5 к КД'},{name:'Доспехи мага',desc:'КД = 13 + мод Лов'},{name:'Туманный шаг',desc:'Телепорт на 30 футов'},{name:'Ложная жизнь',desc:'Временные хиты'},{name:'Луч болезни',desc:'1d8 урона ядом'},{name:'Волна грома',desc:'2d8 урона звуком'}] },
-            paladin: { cantrips: [], level1: [{name:'Благословение',desc:'До трёх существ добавляют 1d4 к броскам атаки и спасброскам'},{name:'Лечение ран',desc:'1d8+мод хитов'},{name:'Кара гнева',desc:'Следующая атака наносит +2d8 урона излучением'},{name:'Щит веры',desc:'Защитный щит с хитами'},{name:'Обнаружение зла и добра',desc:'Чувствуешь фей, исчадий, нежить'},{name:'Героизм',desc:'Временные хиты и иммунитет к испугу'}] },
-            ranger: { cantrips: [], level1: [{name:'Лечение ран',desc:'1d8+мод хитов'},{name:'Охотничья метка',desc:'Помечаешь врага: +1d6 урона против него'},{name:'Туманное облако',desc:'Облако тумана в радиусе 20 футов'},{name:'Долгий шаг',desc:'Увеличиваешь скорость цели на 10 футов на 1 час'},{name:'Обнаружение магии',desc:'Чувствуешь магию'},{name:'Прыжок',desc:'Утраиваешь прыжковую способность цели'}] },
-            druid: { cantrips: [{name:'Друидство',desc:'Создаёшь маленький природный эффект: цветок, искра, звук'},{name:'Устойчивость',desc:'1d4 к одной проверке характеристики'},{name:'Ядовитые брызги',desc:'Конус яда наносит 1d12 урона ядом'},{name:'Произвести пламя',desc:'Создаёшь огонь в руке: ближний бой или метание'},{name:'Сопротивление',desc:'1d4 к спасброску'}], level1: [{name:'Лечение ран',desc:'1d8+мод хитов'},{name:'Создание или уничтожение воды',desc:'Создаёшь 10 галлонов воды или уничтожаешь'},{name:'Фаэри файр',desc:'Подсвечиваешь существ: атаки по ним с преимуществом'},{name:'Прыжок',desc:'Утраиваешь прыжок'},{name:'Долгий шаг',desc:'+10 фт скорости'},{name:'Разговор с животными',desc:'Общаешься с животными'},{name:'Обнаружение магии',desc:'Чувствуешь магию'}] }
-        };
+// EVENTS
+function bindEvents(id){
+  if(id==='race') document.querySelectorAll('[data-race]').forEach(el=>el.addEventListener('click',()=>{state.race=el.dataset.race;state.step=Math.max(state.step,1);render();}));
+  if(id==='class') document.querySelectorAll('[data-cls]').forEach(el=>el.addEventListener('click',()=>{state.cls=el.dataset.cls;state.selectedCantrips=[];state.selectedSpells=[];state.selectedWeapons=[];state.selectedArmor='none';state.selectedShield=false;state.step=Math.max(state.step,2);rebuildSteps();render();}));
+  if(id==='background') document.querySelectorAll('[data-bg]').forEach(el=>el.addEventListener('click',()=>{state.background=el.dataset.bg;state.step=Math.max(state.step,3);render();}));
+  if(id==='spells'){
+    document.querySelectorAll('[data-cantrip]').forEach(el=>el.addEventListener('click',()=>{
+      const c=CLASSES.find(x=>x.id===state.cls),max=c?.cantripsKnown||0,id=el.dataset.cantrip,idx=state.selectedCantrips.indexOf(id);
+      if(idx>=0) state.selectedCantrips.splice(idx,1);
+      else if(state.selectedCantrips.length<max) state.selectedCantrips.push(id);
+      render();
+    }));
+    document.querySelectorAll('[data-spell]').forEach(el=>el.addEventListener('click',()=>{
+      const c=CLASSES.find(x=>x.id===state.cls),max=c?.spellsKnown||0,id=el.dataset.spell,idx=state.selectedSpells.indexOf(id);
+      if(idx>=0) state.selectedSpells.splice(idx,1);
+      else if(state.selectedSpells.length<max) state.selectedSpells.push(id);
+      render();
+    }));
+  }
+  if(id==='equipment'){
+    document.querySelectorAll('[data-weapon]').forEach(el=>el.addEventListener('click',()=>{
+      const wid=el.dataset.weapon,idx=state.selectedWeapons.indexOf(wid);
+      if(idx>=0) state.selectedWeapons.splice(idx,1);
+      else if(state.selectedWeapons.length<2) state.selectedWeapons.push(wid);
+      render();
+    }));
+    document.querySelectorAll('[data-armor]').forEach(el=>el.addEventListener('click',()=>{state.selectedArmor=el.dataset.armor;render();}));
+    const sh=document.getElementById('shieldCard');
+    if(sh) sh.addEventListener('click',()=>{state.selectedShield=!state.selectedShield;render();});
+  }
+}
 
-        let currentStep = 1;
-        let character = { name: '', race: null, class: null, background: null, stats: { str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 }, spells: { cantrips: [], level1: [] }, skills: [] };
-        const statNames = { str: 'Сила', dex: 'Ловкость', con: 'Телосложение', int: 'Интеллект', wis: 'Мудрость', cha: 'Харизма' };
-        const statKeys = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+function chgStat(k,d){
+  const v=state.stats[k],n=v+d;
+  if(n<8||n>15) return;
+  if(d>0){const cost=(POINT_COST[n]||0)-(POINT_COST[v]||0);if(rem()<cost) return;}
+  state.stats[k]=n; render();
+}
 
-        function saveToLocalStorage() { localStorage.setItem('dnd_char', JSON.stringify(character)); localStorage.setItem('dnd_step', currentStep); }
-        function loadFromLocalStorage() { const savedChar = localStorage.getItem('dnd_char'); const savedStep = localStorage.getItem('dnd_step'); if (savedChar) { character = JSON.parse(savedChar); if (savedStep) currentStep = parseInt(savedStep); } }
-        function clearSave() { localStorage.removeItem('dnd_char'); localStorage.removeItem('dnd_step'); location.reload(); }
+function goTo(i){if(i<=state.step){state.step=i;render();}}
 
-        function getPointCost(value) { if (value <= 13) return value - 8; if (value === 14) return 7; if (value === 15) return 9; return 0; }
-        function getTotalPointsUsed() { let t = 0; for (let k in character.stats) t += getPointCost(character.stats[k]); return t; }
-        function getPointsRemaining() { return 27 - getTotalPointsUsed(); }
+document.getElementById('btnNext').addEventListener('click',()=>{if(state.step<STEPS.length-1){state.step++;render();}});
+document.getElementById('btnBack').addEventListener('click',()=>{if(state.step>0){state.step--;render();}});
+document.getElementById('btnRandom').addEventListener('click',randomize);
 
-        function getTotalSteps() { return character.class?.magic ? 5 : 4; }
-        function getCurrentDisplayStep() { if (!character.class?.magic && currentStep >= 5) return currentStep - 1; return currentStep; }
+if(!state.startGold) rollGold();
+render();
 
-        function render() {
-            saveToLocalStorage();
-            document.getElementById('step-indicator').innerText = getCurrentDisplayStep();
-            document.getElementById('total-steps').innerText = getTotalSteps();
-            const container = document.getElementById('app-container');
-            const btnBack = document.getElementById('btn-back');
-            const btnNext = document.getElementById('btn-next');
-            btnBack.classList.toggle('hidden', currentStep === 1);
-            btnNext.innerText = currentStep === (character.class?.magic ? 5 : 4) ? '✅ Завершить' : 'Далее →';
+// ===== AI ASSISTANT =====
+(function(){
+  var btn=document.getElementById('aiToggleBtn');
+  var badge=document.getElementById('aiBadge');
+  var modal=document.getElementById('aiModal');
+  var frame=document.getElementById('aiFrame');
+  var closeBtn=document.getElementById('aiModalClose');
+  btn.addEventListener('click',function(){
+    modal.style.display='flex';
+    badge.classList.remove('show');
+    if(!frame.src||frame.src==='about:blank'||frame.src==='') frame.src='ai-chat.html';
+  });
+  closeBtn.addEventListener('click',function(){modal.style.display='none';});
+  modal.addEventListener('click',function(e){if(e.target===modal)modal.style.display='none';});
+})();
+</script>
 
-            if (currentStep === 1) renderStep1(container);
-            else if (currentStep === 2) renderStep2(container);
-            else if (currentStep === 3) renderStep3(container);
-            else if (currentStep === 4) renderStep4(container);
-            else if (currentStep === 5) renderStep5(container);
-        }
+  <!-- AI ASSISTANT -->
+  <button class="ai-btn" id="aiToggleBtn" title="Помощник по правилам PHB">
+    📖<div class="ai-badge" id="aiBadge"></div>
+  </button>
+  <div id="aiModal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.55);align-items:flex-end;justify-content:flex-end;padding:0 20px 80px;">
+    <div style="width:380px;max-width:calc(100vw - 32px);height:520px;max-height:80vh;border-radius:16px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.35);position:relative;">
+      <button id="aiModalClose" style="position:absolute;top:10px;right:12px;z-index:10;background:rgba(255,255,255,.2);border:none;color:#fff;width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:14px;font-weight:700;">✕</button>
+      <iframe id="aiFrame" src="" style="width:100%;height:100%;border:none;" title="AI помощник PHB"></iframe>
+    </div>
+  </div>
 
-        function renderStep1(container) { container.innerHTML = `<h2 class="text-3xl font-bold text-amber-500 mb-6 fantasy-title animate-fade-in">🌟 Шаг 1: Выбери расу</h2><div class="grid grid-cols-1 md:grid-cols-3 gap-4">${races.map(r => `<div class="card p-5 rounded-xl ${character.race?.id === r.id ? 'selected' : ''} animate-fade-in" onclick="selectRace('${r.id}')"><div class="flex items-center gap-4 mb-3"><img src="${raceIcons[r.id]}" alt="${r.name}" class="race-icon" onerror="handleImageError(this, '${raceEmojis[r.id]}', 'race')"><div><h3 class="text-xl font-bold text-amber-400">${r.name}</h3><p class="text-xs text-blue-400">Скорость: ${r.speed} фт</p></div></div><p class="text-sm text-gray-300 mb-3">${r.desc}</p><div class="text-xs space-y-1">${r.abilities.map(a => `<div class="text-purple-300">• ${a.name}</div>`).join('')}</div></div>`).join('')}</div>`; }
-        function renderStep2(container) { container.innerHTML = `<h2 class="text-3xl font-bold text-amber-500 mb-6 fantasy-title animate-fade-in">⚔️ Шаг 2: Выбери класс</h2><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${classes.map(c => `<div class="card p-5 rounded-xl ${character.class?.id === c.id ? 'selected' : ''} animate-fade-in" onclick="selectClass('${c.id}')"><div class="flex items-center gap-4 mb-3"><img src="${classIcons[c.id]}" alt="${c.name}" class="class-icon" onerror="handleImageError(this, '${classEmojis[c.id]}', 'class')"><div class="flex-1"><div class="flex justify-between items-center"><h3 class="text-xl font-bold text-amber-400">${c.name}</h3><span class="text-xs ${c.magic ? 'bg-purple-600' : 'bg-gray-600'} px-2 py-1 rounded font-bold">${c.magic ? '✨ Маг' : '⚔️ Воин'}</span></div><p class="text-xs text-gray-400 mt-1">Кость хитов: <b class="text-amber-500">d${c.hitDie}</b></p></div></div><p class="text-sm text-gray-300 mb-2">${c.desc}</p><div class="text-xs text-gray-400 mb-2">Главная: <b class="text-amber-500">${c.primary}</b></div>${c.magic ? `<div class="text-xs text-purple-400">✨ ${c.cantrips} заговоров + ${c.spells1} заклинаний</div>` : ''}</div>`).join('')}</div>`; }
-        function renderStep3(container) { container.innerHTML = `<h2 class="text-3xl font-bold text-amber-500 mb-6 fantasy-title animate-fade-in"> Шаг 3: Происхождение</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-4">${backgrounds.map(b => `<div class="card p-5 rounded-xl ${character.background?.id === b.id ? 'selected' : ''} animate-fade-in" onclick="selectBackground('${b.id}')"><h3 class="text-xl font-bold text-amber-400 mb-2">${b.name}</h3><p class="text-sm text-gray-300 mb-3">${b.desc}</p><div class="text-sm"><span class="text-gray-400">Навыки:</span> <b class="text-amber-500">${b.skills.join(', ')}</b></div></div>`).join('')}</div>`; }
-        function renderStep4(container) {
-            let pointsRemaining = getPointsRemaining();
-            let statTipsHtml = character.class?.statTips ? `<div class="tip-banner"><div class="text-sm"><span class="tip-primary"> Главная:</span> ${statNames[character.class.statTips.primary]} • <span class="tip-secondary"> Вторичная:</span> ${statNames[character.class.statTips.secondary]}</div><div class="text-xs text-gray-400 mt-1">${character.class.statTips.tip}</div></div>` : `<div class="tip-banner"><div class="text-sm text-gray-300">💡 Выбери класс для рекомендаций.</div></div>`;
-            let statsHtml = '';
-            for (let key of statKeys) {
-                let base = character.stats[key];
-                let bonus = character.race ? (character.race.bonus[key] || 0) : 0;
-                let final = base + bonus;
-                let mod = Math.floor((final - 10) / 2);
-                let modStr = mod >= 0 ? `+${mod}` : mod;
-                let cost = getPointCost(base);
-                const isRec = character.class?.statTips && (key === character.class.statTips.primary || key === character.class.statTips.secondary);
-                const isPri = character.class?.statTips?.primary === key;
-                statsHtml += `<div class="bg-gray-900/80 p-4 rounded-xl border border-gray-700 ${isRec ? 'stat-recommended' : ''} ${isPri ? 'stat-primary' : ''} stat-block"><div class="flex items-center justify-between flex-wrap md:flex-nowrap gap-3"><div class="flex-1 min-w-0"><div class="font-bold text-amber-500 text-lg flex items-center gap-2 flex-wrap">${statNames[key]} ${isPri ? '<span class="text-xs bg-amber-600 text-black px-2 py-0.5 rounded font-bold">ГЛАВНАЯ</span>' : ''} ${isRec && !isPri ? '<span class="text-xs bg-blue-600 text-white px-2 py-0.5 rounded font-bold">ВАЖНО</span>' : ''}</div><div class="text-xs text-gray-500 mt-1">База: ${base} ${bonus > 0 ? `<span class="text-purple-400">+ ${bonus}</span> = <span class="text-amber-400">${final}</span>` : ''} • Стоимость: ${cost}</div></div><div class="flex items-center gap-3"><button class="stat-btn" onclick="changeStat('${key}', -1)" ${base <= 8 ? 'disabled' : ''}>−</button><span class="text-3xl font-bold w-12 text-center text-amber-400 stat-value">${final}</span><button class="stat-btn" onclick="changeStat('${key}', 1)" ${base >= 15 || pointsRemaining < (base >= 13 ? 2 : 1) ? 'disabled' : ''}>+</button></div><div class="w-24 text-right"><div class="text-xs text-gray-400">Мод</div><div class="text-2xl font-bold ${mod >= 0 ? 'text-green-400' : 'text-red-400'} stat-modifier">${modStr}</div></div></div></div>`;
-            }
-            container.innerHTML = `<h2 class="text-3xl font-bold text-amber-500 mb-4 fantasy-title">📊 Характеристики (Point Buy)</h2>${statTipsHtml}<div class="mb-6 text-center"><div class="points-counter text-lg">Осталось очков: ${pointsRemaining} / 27</div></div><div class="space-y-3">${statsHtml}</div>`;
-        }
-        function renderStep5(container) {
-            const cs = spells[character.class.id]; if (!cs) return;
-            const cHtml = cs.cantrips.map(s => `<div class="card p-4 rounded-xl ${character.spells.cantrips.includes(s.name) ? 'selected' : ''}" onclick="toggleSpell('cantrips', '${s.name}')"><div class="flex justify-between items-start"><div class="flex-1"><span class="spell-tag cantrip">Заговор</span><span class="font-bold text-lg text-amber-400">${s.name}</span><p class="text-xs text-gray-400 mt-2">${s.desc}</p></div>${character.spells.cantrips.includes(s.name) ? '<span class="text-amber-500 text-3xl">✓</span>' : ''}</div></div>`).join('');
-            const lHtml = cs.level1.map(s => `<div class="card p-4 rounded-xl ${character.spells.level1.includes(s.name) ? 'selected' : ''}" onclick="toggleSpell('level1', '${s.name}')"><div class="flex justify-between items-start"><div class="flex-1"><span class="spell-tag level1">1-й уровень</span><span class="font-bold text-lg text-amber-400">${s.name}</span><p class="text-xs text-gray-400 mt-2">${s.desc}</p></div>${character.spells.level1.includes(s.name) ? '<span class="text-amber-500 text-3xl">✓</span>' : ''}</div></div>`).join('');
-            container.innerHTML = `<h2 class="text-3xl font-bold text-amber-500 mb-4 fantasy-title">✨ Заклинания</h2><p class="text-sm text-gray-400 mb-6">Выбери <b class="text-amber-400">${character.class.cantrips} заговоров</b> и <b class="text-amber-400">${character.class.spells1} заклинаний</b>.</p>${cs.cantrips.length > 0 ? `<h3 class="text-xl font-bold text-purple-400 mb-3 mt-4">🔮 Заговоры (${character.spells.cantrips.length}/${character.class.cantrips})</h3><div class="space-y-3 mb-6">${cHtml}</div>` : ''}<h3 class="text-xl font-bold text-blue-400 mb-3"> 1-й уровень (${character.spells.level1.length}/${character.class.spells1})</h3><div class="space-y-3">${lHtml}</div>`;
-        }
-
-        function handleImageError(img, emoji, type) { img.style.display = 'none'; const p = document.createElement('div'); p.className = type === 'class' ? 'icon-placeholder' : 'race-icon-placeholder'; p.textContent = emoji; img.parentNode.insertBefore(p, img.nextSibling); }
-        function selectRace(id) { character.race = races.find(r => r.id === id); render(); }
-        function selectClass(id) { character.class = classes.find(c => c.id === id); character.spells = { cantrips: [], level1: [] }; render(); }
-        function selectBackground(id) { character.background = backgrounds.find(b => b.id === id); render(); }
-        function changeStat(stat, delta) { let newVal = character.stats[stat] + delta; if (newVal >= 8 && newVal <= 15) { let newUsed = getTotalPointsUsed() - getPointCost(character.stats[stat]) + getPointCost(newVal); if (newUsed <= 27) { character.stats[stat] = newVal; render(); } } }
-        function toggleSpell(level, name) { const max = character.class[level === 'cantrips' ? 'cantrips' : 'spells1']; const arr = character.spells[level]; const idx = arr.indexOf(name); if (idx > -1) arr.splice(idx, 1); else if (arr.length < max) arr.push(name); else alert(`Максимум ${max}!`); render(); }
-        function nextStep() {
-            if (currentStep === 1 && !character.race) return alert('Выбери расу!');
-            if (currentStep === 2 && !character.class) return alert('Выбери класс!');
-            if (currentStep === 3 && !character.background) return alert('Выбери происхождение!');
-            const max = character.class?.magic ? 5 : 4;
-            if (currentStep === 4 && getPointsRemaining() > 0 && !confirm(`Осталось ${getPointsRemaining()} очков. Продолжить?`)) return;
-            if (currentStep === 5) {
-                if (character.spells.cantrips.length !== character.class.cantrips) return alert(`Выбери ${character.class.cantrips} заговоров!`);
-                if (character.spells.level1.length !== character.class.spells1) return alert(`Выбери ${character.class.spells1} заклинаний!`);
-            }
-            if (currentStep < max) { currentStep++; render(); } else showFinalSheet();
-        }
-        function prevStep() { if (currentStep > 1) { currentStep--; render(); } }
-
-        function showFinalSheet() {
-            const container = document.getElementById('app-container');
-            document.getElementById('btn-back').classList.remove('hidden');
-            document.getElementById('btn-next').innerText = '🔄 Заново';
-            document.getElementById('btn-next').onclick = () => location.reload();
-
-            let dexMod = Math.floor((character.stats.dex + (character.race?.bonus.dex || 0) - 10) / 2);
-            let conMod = Math.floor((character.stats.con + (character.race?.bonus.con || 0) - 10) / 2);
-            let wisMod = Math.floor((character.stats.wis + (character.race?.bonus.wis || 0) - 10) / 2);
-            let ac = 10 + dexMod;
-            if (character.class.id === 'barbarian') ac = 10 + dexMod + conMod;
-            if (character.class.id === 'monk') ac = 10 + dexMod + wisMod;
-            let hp = character.class.hitDie + conMod;
-
-            let statsList = '';
-            for (let key in character.stats) {
-                let final = character.stats[key] + (character.race ? (character.race.bonus[key] || 0) : 0);
-                let mod = Math.floor((final - 10) / 2);
-                statsList += `<div class="flex justify-between border-b border-gray-700 py-2"><span>${statNames[key]}</span> <span class="font-bold text-amber-400">${final} (${mod >= 0 ? '+' : ''}${mod})</span></div>`;
-            }
-
-            let spellsList = '';
-            if (character.class?.magic && character.spells.cantrips.length > 0) {
-                const cs = spells[character.class.id];
-                spellsList = `<div class="mt-6 pt-6 border-t border-amber-600/30"><div class="font-bold text-purple-400 mb-3">✨ Заговоры:</div>${character.spells.cantrips.map(n => `<div class="desc-box"><b>${n}:</b> ${cs.cantrips.find(s=>s.name===n)?.desc}</div>`).join('')}<div class="font-bold text-blue-400 mb-3 mt-4"> 1-й уровень:</div>${character.spells.level1.map(n => `<div class="desc-box"><b>${n}:</b> ${cs.level1.find(s=>s.name===n)?.desc}</div>`).join('')}</div>`;
-            }
-
-            container.innerHTML = `
-                <h2 class="text-4xl font-bold text-amber-500 mb-8 text-center fantasy-title"> Лист Персонажа</h2>
-                <div class="bg-gray-900/90 p-6 md:p-8 rounded-2xl border-2 border-amber-600/50 shadow-2xl space-y-6">
-                    <div class="text-center">
-                        <input type="text" id="char-name" placeholder="Имя персонажа" value="${character.name}" class="bg-transparent text-2xl md:text-3xl font-bold text-center w-full border-b-2 border-amber-600/50 focus:border-amber-500 outline-none pb-2 fantasy-title text-amber-400" oninput="character.name = this.value; saveToLocalStorage();">
-                        <div class="text-gray-300 mt-3">${character.race.name} • ${character.class.name} • ${character.background.name}</div>
-                    </div>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 text-center">
-                        <div class="bg-gray-800/80 p-3 rounded-xl border border-amber-600/30"><div class="text-xs text-gray-400">🛡️ КД</div><div class="text-3xl font-bold text-amber-500">${ac}</div></div>
-                        <div class="bg-gray-800/80 p-3 rounded-xl border border-amber-600/30"><div class="text-xs text-gray-400">⚡ Инициатива</div><div class="text-3xl font-bold ${dexMod >= 0 ? 'text-green-400' : 'text-red-400'}">${dexMod >= 0 ? '+' : ''}${dexMod}</div></div>
-                        <div class="bg-gray-800/80 p-3 rounded-xl border border-amber-600/30"><div class="text-xs text-gray-400">❤️ Хиты</div><div class="text-3xl font-bold text-red-400">${hp}</div></div>
-                        <div class="bg-gray-800/80 p-3 rounded-xl border border-amber-600/30"><div class="text-xs text-gray-400">👟 Скорость</div><div class="text-3xl font-bold text-blue-400">${character.race.speed} фт</div></div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3 text-sm bg-gray-800/50 p-4 rounded-xl border border-gray-700">${statsList}</div>
-                    <div class="text-sm space-y-2 border-t border-gray-700 pt-4"><div><span class="text-gray-400">Доспехи:</span> ${character.class.armor.join(', ') || 'Нет'}</div><div><span class="text-gray-400">Оружие:</span> ${character.class.weapons.join(', ')}</div><div><span class="text-gray-400">Спасброски:</span> ${character.class.saves.join(', ')}</div></div>
-                    <div class="border-t border-gray-700 pt-4">${character.race.abilities.map(a => `<div class="desc-box"><b>${a.name}:</b> ${a.desc}</div>`).join('')}</div>
-                    <div class="border-t border-gray-700 pt-4">${character.class.features.map(f => `<div class="desc-box"><b>${f.name}:</b> ${f.desc}</div>`).join('')}</div>
-                    ${spellsList}
-                    <div class="flex gap-4 mt-6 flex-col md:flex-row">
-                        <button onclick="copyToDiscord()" class="flex-1 py-3 bg-gradient-to-r from-blue-600 to-blue-500 rounded-xl font-bold active:scale-95">📋 Discord</button>
-                        <button onclick="generatePDF()" class="flex-1 py-3 bg-gradient-to-r from-green-600 to-green-500 rounded-xl font-bold active:scale-95"> Скачать PDF</button>
-                    </div>
-                </div>`;
-        }
-
-        function copyToDiscord() {
-            let dexMod = Math.floor((character.stats.dex + (character.race?.bonus.dex || 0) - 10) / 2);
-            let conMod = Math.floor((character.stats.con + (character.race?.bonus.con || 0) - 10) / 2);
-            let ac = 10 + dexMod;
-            if (character.class.id === 'barbarian') ac += conMod;
-            if (character.class.id === 'monk') ac += Math.floor((character.stats.wis + (character.race?.bonus.wis || 0) - 10) / 2);
-            let hp = character.class.hitDie + conMod;
-            let text = `**${character.name || 'Безымянный'}** (${character.race.name} ${character.class.name})\n️КД:${ac} ❤️HP:${hp} ⚡Init:${dexMod}\n`;
-            for (let k in character.stats) { let v = character.stats[k] + (character.race.bonus[k]||0); let m = Math.floor((v-10)/2); text += `${statNames[k]}:${v}(${m>=0?'+':''}${m}) `; }
-            text += `\nЗаговоры:${character.spells.cantrips.join(', ')}\n1ур:${character.spells.level1.join(', ')}`;
-            navigator.clipboard.writeText(text);
-            const t = document.getElementById('copy-toast'); t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000);
-        }
-
-        async function generatePDF() {
-            const { jsPDF } = window.jspdf;
-            const sc = document.getElementById('sheet-content');
-            const dexMod = Math.floor((character.stats.dex + (character.race?.bonus.dex || 0) - 10) / 2);
-            const conMod = Math.floor((character.stats.con + (character.race?.bonus.con || 0) - 10) / 2);
-            const ac = 10 + dexMod + (character.class.id === 'barbarian' ? conMod : 0) + (character.class.id === 'monk' ? Math.floor((character.stats.wis + (character.race?.bonus.wis || 0) - 10) / 2) : 0);
-            const hp = character.class.hitDie + conMod;
-
-            let statsHtml = '<div class="pdf-grid">';
-            for (let key in character.stats) {
-                let final = character.stats[key] + (character.race.bonus[key]||0);
-                let mod = Math.floor((final-10)/2);
-                statsHtml += `<div class="pdf-stat-box"><div class="pdf-stat-label">${statNames[key]}</div><div class="pdf-stat-value">${final}</div><div class="pdf-stat-mod">${mod>=0?'+':''}${mod}</div></div>`;
-            }
-            statsHtml += '</div>';
-
-            let abilitiesHtml = character.race.abilities.map(a => `<div class="pdf-ability"><span class="pdf-ability-name">${a.name}:</span> ${a.desc}</div>`).join('');
-            let featuresHtml = character.class.features.map(f => `<div class="pdf-ability"><span class="pdf-ability-name">${f.name}:</span> ${f.desc}</div>`).join('');
-            
-            let spellsHtml = '';
-            if (character.class.magic && character.spells.cantrips.length > 0) {
-                const cs = spells[character.class.id];
-                spellsHtml = `<div class="pdf-section"><div class="pdf-section-title">✨ Заклинания</div><div><b>Заговоры:</b> ${character.spells.cantrips.join(', ')}</div><div><b>1-й уровень:</b> ${character.spells.level1.join(', ')}</div></div>`;
-            }
-
-            sc.innerHTML = `
-                <div class="pdf-section" style="text-align: center; background: #fef3c7; border-color: #d97706;">
-                    <div style="font-size: 20px; font-weight: bold; color: #d97706; margin-bottom: 5px;">${character.name || 'Безымянный герой'}</div>
-                    <div style="color: #6b7280;">${character.race.name} ${character.class.name} • ${character.background.name}</div>
-                </div>
-                <div class="pdf-section">
-                    <div class="pdf-section-title"> Характеристики</div>
-                    ${statsHtml}
-                </div>
-                <div class="pdf-section">
-                    <div class="pdf-section-title">⚔️ Боевые параметры</div>
-                    <div class="pdf-grid">
-                        <div class="pdf-stat-box"><div class="pdf-stat-label">🛡️ КД</div><div class="pdf-stat-value">${ac}</div></div>
-                        <div class="pdf-stat-box"><div class="pdf-stat-label">❤️ Хиты</div><div class="pdf-stat-value">${hp}</div></div>
-                        <div class="pdf-stat-box"><div class="pdf-stat-label">⚡ Инициатива</div><div class="pdf-stat-value">${dexMod>=0?'+':''}${dexMod}</div></div>
-                        <div class="pdf-stat-box"><div class="pdf-stat-label">👟 Скорость</div><div class="pdf-stat-value">${character.race.speed} фт</div></div>
-                    </div>
-                </div>
-                <div class="pdf-section">
-                    <div class="pdf-section-title">🛡️ Владения</div>
-                    <div class="pdf-info-row"><span class="pdf-info-label">Доспехи:</span> <span>${character.class.armor.join(', ') || 'Нет'}</span></div>
-                    <div class="pdf-info-row"><span class="pdf-info-label">Оружие:</span> <span>${character.class.weapons.join(', ')}</span></div>
-                    <div class="pdf-info-row"><span class="pdf-info-label">Спасброски:</span> <span>${character.class.saves.join(', ')}</span></div>
-                </div>
-                <div class="pdf-section">
-                    <div class="pdf-section-title">🌟 Расовые способности</div>
-                    ${abilitiesHtml}
-                </div>
-                <div class="pdf-section">
-                    <div class="pdf-section-title">⚔️ Особенности класса</div>
-                    ${featuresHtml}
-                </div>
-                ${spellsHtml}
-            `;
-
-            document.getElementById('pdf-date').textContent = new Date().toLocaleDateString('ru-RU');
-            
-            const el = document.getElementById('character-sheet');
-            el.style.display = 'block';
-            
-            try {
-                const canvas = await html2canvas(el, { 
-                    scale: 2, 
-                    useCORS: true, 
-                    logging: false,
-                    width: 800,
-                    windowWidth: 800
-                });
-                
-                const imgData = canvas.toDataURL('image/png');
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = pdf.internal.pageSize.getHeight();
-                const imgWidth = canvas.width;
-                const imgHeight = canvas.height;
-                const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-                const imgX = (pdfWidth - imgWidth * ratio) / 2;
-                const imgY = 10;
-                
-                pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-                pdf.save(`character-${character.name || 'unnamed'}.pdf`);
-            } catch (error) {
-                console.error('PDF Error:', error);
-                alert('Ошибка при создании PDF. Попробуйте ещё раз.');
-            } finally {
-                el.style.display = 'none';
-            }
-        }
-
-        function randomize() {
-            character.race = races[Math.floor(Math.random() * races.length)];
-            character.class = classes[Math.floor(Math.random() * classes.length)];
-            character.background = backgrounds[Math.floor(Math.random() * backgrounds.length)];
-            let s = ['str','dex','con','int','wis','cha'], p = 27;
-            s.forEach(k => character.stats[k] = 8);
-            while (p > 0) { let k = s[Math.floor(Math.random()*s.length)]; if (character.stats[k] < 15) { let c = character.stats[k] >= 13 ? 2 : 1; if (p >= c) { character.stats[k]++; p -= c; } } }
-            if (character.class.magic && spells[character.class.id]) {
-                let cs = spells[character.class.id]; character.spells = { cantrips: [], level1: [] };
-                let ac = [...cs.cantrips]; for (let i=0; i<character.class.cantrips && ac.length; i++) { let idx = Math.floor(Math.random()*ac.length); character.spells.cantrips.push(ac[idx].name); ac.splice(idx,1); }
-                let al = [...cs.level1]; for (let i=0; i<character.class.spells1 && al.length; i++) { let idx = Math.floor(Math.random()*al.length); character.spells.level1.push(al[idx].name); al.splice(idx,1); }
-            }
-            currentStep = 1; render();
-        }
-
-        const canvas = document.getElementById('particles-canvas');
-        const ctx = canvas.getContext('2d');
-        let particles = [];
-        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-        window.addEventListener('resize', resize); resize();
-        
-        class Particle {
-            constructor() { this.reset(); }
-            reset() {
-                this.x = Math.random() * canvas.width;
-                this.y = canvas.height + Math.random() * 100;
-                this.size = Math.random() * 3 + 1;
-                this.speedY = Math.random() * 1 + 0.5;
-                this.speedX = (Math.random() - 0.5) * 0.5;
-                this.opacity = Math.random() * 0.5 + 0.2;
-                this.color = Math.random() > 0.5 ? '#f59e0b' : '#ef4444';
-            }
-            update() {
-                this.y -= this.speedY;
-                this.x += this.speedX;
-                this.opacity -= 0.002;
-                if (this.y < 0 || this.opacity <= 0) this.reset();
-            }
-            draw() {
-                ctx.fillStyle = this.color;
-                ctx.globalAlpha = this.opacity;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-        
-        for(let i=0; i<50; i++) particles.push(new Particle());
-        function animate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            particles.forEach(p => { p.update(); p.draw(); });
-            requestAnimationFrame(animate);
-        }
-        animate();
-
-        loadFromLocalStorage();
-        render();
-    </script>
 </body>
 </html>
