@@ -272,14 +272,33 @@ html, body { min-height:100vh; background:var(--bg-page); color:var(--text-prima
 
 
   <!-- ===== AI FAB + WINDOW ===== -->
-  <button class="ai-fab" id="aiFab">📖</button>
-  <div class="ai-window" id="aiWin">
-    <div class="ai-head">
-      <span class="ai-head-icon">📖</span>
-      <h3>Помощник по правилам</h3>
-      <small>только PHB 5e</small>
-      <button class="ai-x" id="aiClose">✕</button>
+<button class="ai-fab" id="aiFab">📖</button>
+<div class="ai-window" id="aiWin">
+  <div class="ai-head">
+    <span class="ai-head-icon">📖</span>
+    <h3>Помощник по правилам</h3>
+    <small>только PHB 5e</small>
+    <button class="ai-x" id="aiClose">&#10005;</button>
+  </div>
+  <div class="ai-msgs" id="aiMsgs">
+    <div class="ai-row">
+      <div class="ai-ava">📖</div>
+      <div class="ai-bub">Привет! Задавай вопросы по правилам D&amp;D 5e — отвечу строго по <b>Player's Handbook</b> со ссылкой на главу.</div>
     </div>
+  </div>
+  <div class="ai-chips" id="aiChips">
+    <button class="ai-chip">Point Buy?</button>
+    <button class="ai-chip">Спасбросок?</button>
+    <button class="ai-chip">КД без доспеха?</button>
+    <button class="ai-chip">Концентрация?</button>
+    <button class="ai-chip">Преим./помеха?</button>
+    <button class="ai-chip">Короткий/долгий отдых?</button>
+  </div>
+  <div class="ai-inp-wrap">
+    <textarea class="ai-inp" id="aiInp" placeholder="Вопрос по правилам PHB..." rows="1"></textarea>
+    <button class="ai-go" id="aiGo">&#10148;</button>
+  </div>
+</div>
 
 <script>
 const P = {
@@ -1330,25 +1349,5 @@ render();
 })();
 
 </script>
-    <div class="ai-msgs" id="aiMsgs">
-      <div class="ai-row">
-        <div class="ai-ava">📖</div>
-        <div class="ai-bub">Привет! Задавай вопросы по правилам D&amp;D 5e — отвечу строго по <b>Player's Handbook</b> со ссылкой на главу.</div>
-      </div>
-    </div>
-    <div class="ai-chips" id="aiChips">
-      <button class="ai-chip">Point Buy?</button>
-      <button class="ai-chip">Спасбросок?</button>
-      <button class="ai-chip">КД без доспеха?</button>
-      <button class="ai-chip">Концентрация?</button>
-      <button class="ai-chip">Преим./помеха?</button>
-      <button class="ai-chip">Короткий/долгий отдых?</button>
-    </div>
-    <div class="ai-inp-wrap">
-      <textarea class="ai-inp" id="aiInp" placeholder="Вопрос по правилам PHB..." rows="1"></textarea>
-      <button class="ai-go" id="aiGo">&#10148;</button>
-    </div>
-  </div>
-
 </body>
 </html>
