@@ -1239,26 +1239,86 @@ render();
     inp.value='';inp.style.height='auto';
     showTyping();
 
-    fetch('https://api.anthropic.com/v1/messages',{
+    // URL воркера/API — сохраняется в localStorage
+    // По умолчанию использует локальный /api/anthropic (для Vercel)
+    var workerUrl = localStorage.getItem('ai_worker_url') || '/api/chat';
+
+    fetch(workerUrl, {
       method:'POST',
-      headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,system:SYS,messages:hist})
     })
-    .then(function(r){return r.json();})
+    .then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    })
     .then(function(d){
       hideTyping();
-      var reply=d.content&&d.content[0]&&d.content[0].text?d.content[0].text:'Пустой ответ, попробуй ещё раз.';
+      var reply=d.content&&d.content[0]&&d.content[0].text
+        ? d.content[0].text
+        : (d.error ? '⚠️ Ошибка API: '+d.error.message : 'Пустой ответ.');
       hist.push({role:'assistant',content:reply});
       addMsg('bot',reply);
     })
-    .catch(function(){
+    .catch(function(e){
       hideTyping();
-      addMsg('bot','Ошибка соединения. Убедись что сайт открыт через HTTPS (GitHub Pages).');
+      addMsg('bot','⚠️ Ошибка: '+e.message+'. Проверь URL воркера в настройках (⚙️).');
     })
     .finally(function(){busy=false;go.disabled=false;});
   }
 
-  fab.addEventListener('click',toggle);
+  // --- SETUP SCREEN ---
+  function showSetup(){
+    var existingSetup = document.getElementById('aiSetup');
+    if(existingSetup){ existingSetup.style.display='flex'; return; }
+
+    var setup = document.createElement('div');
+    setup.id = 'aiSetup';
+    setup.style.cssText='position:absolute;inset:0;background:#fff;z-index:10;display:flex;flex-direction:column;padding:20px;gap:12px;border-radius:18px;';
+    setup.innerHTML = [
+      '<div style="font-size:13px;font-weight:700;color:#6d28d9;">⚙️ Настройка AI-помощника</div>',
+      '<div style="font-size:12px;color:#5a3e20;line-height:1.6;">',
+      'Для работы AI нужен <b>Cloudflare Worker</b> как прокси.',
+      '<br><br>',
+      '<b>Быстрая настройка (5 минут):</b><br>',
+      '1. Зайди на <a href="https://workers.cloudflare.com" target="_blank" style="color:#7c3aed;">workers.cloudflare.com</a><br>',
+      '2. Создай новый Worker<br>',
+      '3. Вставь код из файла <b>worker.js</b> (в папке сайта)<br>',
+      '4. В Settings → Variables добавь: <code style="background:#f3e8ff;padding:1px 5px;border-radius:3px;">ANTHROPIC_API_KEY</code> = твой ключ<br>',
+      '5. Задеплой и скопируй URL воркера сюда:',
+      '</div>',
+      '<input id="aiWorkerInp" type="url" placeholder="https://my-worker.your-name.workers.dev" style="border:1.5px solid #e9d5ff;border-radius:8px;padding:8px 10px;font-size:13px;outline:none;width:100%;">',
+      '<button id="aiWorkerSave" style="background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;color:#fff;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;">Сохранить и начать</button>',
+      '<button id="aiWorkerSkip" style="background:transparent;border:1px solid #e9d5ff;color:#9c7d50;border-radius:8px;padding:8px;font-size:12px;cursor:pointer;">Отмена</button>',
+    ].join('');
+    document.getElementById('aiWin').appendChild(setup);
+
+    document.getElementById('aiWorkerSave').addEventListener('click', function(){
+      var url = document.getElementById('aiWorkerInp').value.trim();
+      if(!url){ alert('Введи URL воркера'); return; }
+      localStorage.setItem('ai_worker_url', url);
+      setup.style.display='none';
+      addMsg('bot','✅ Готово! Теперь можешь задавать вопросы по правилам PHB.');
+    });
+    document.getElementById('aiWorkerSkip').addEventListener('click', function(){
+      setup.style.display='none';
+    });
+  }
+
+  // Settings gear button
+  var settingsBtn = document.createElement('button');
+  settingsBtn.title='Настройки AI';
+  settingsBtn.style.cssText='position:absolute;bottom:82px;right:78px;z-index:500;width:32px;height:32px;border-radius:50%;background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;';
+  settingsBtn.textContent='⚙️';
+  document.body.appendChild(settingsBtn);
+  settingsBtn.addEventListener('click', function(e){
+    e.stopPropagation();
+    if(!open){ toggle(); }
+    setTimeout(showSetup, open ? 0 : 250);
+  });
+
+  // Show setup on first open if no worker configured
+  fab.addEventListener('click', toggle);
   closeBtn.addEventListener('click',toggle);
   go.addEventListener('click',function(){send(inp.value);});
   inp.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send(inp.value);}});
