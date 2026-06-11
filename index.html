@@ -226,48 +226,20 @@ html, body { min-height:100vh; background:var(--bg-page); color:var(--text-prima
   @media(max-width:600px){.ai-btn{bottom:75px;right:12px;}}
 
   /* ===== AI ASSISTANT ===== */
-  .ai-fab-wrap{position:fixed;bottom:80px;right:20px;z-index:500;display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
-  .ai-fab-wrap.hint-hidden .ai-fab-hint{display:none;}
-  .ai-fab-hint{background:#1e293b;color:#f8fafc;font-size:12px;font-family:var(--font-ui);padding:8px 12px;border-radius:10px;border-bottom-right-radius:4px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,.4);white-space:nowrap;animation:hintPop .4s ease;position:relative;}
-  @keyframes hintPop{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
-  .ai-fab-hint::after{content:'';position:absolute;bottom:-9px;right:17px;border:5px solid transparent;border-top-color:#1e293b;}
-  .ai-fab-hint-close{background:rgba(255,255,255,.15);border:none;color:#f8fafc;width:18px;height:18px;border-radius:50%;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-  .ai-fab{position:relative;width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;box-shadow:0 4px 20px rgba(124,58,237,.45);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:24px;transition:transform .15s;}
-  .ai-fab{position:fixed;bottom:80px;right:20px;z-index:500;width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;box-shadow:0 4px 20px rgba(124,58,237,.45);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:24px;transition:transform .15s,box-shadow .15s;}
-  .ai-fab:hover{transform:scale(1.08);box-shadow:0 6px 28px rgba(124,58,237,.6);}
-  .ai-fab.active{background:linear-gradient(135deg,#5b21b6,#7c3aed);}
-  .ai-window{position:fixed;bottom:146px;right:20px;z-index:499;width:370px;max-width:calc(100vw - 32px);height:500px;max-height:calc(100vh - 180px);background:#fff;border:1.5px solid rgba(124,58,237,.2);border-radius:18px;box-shadow:0 8px 40px rgba(0,0,0,.18);display:flex;flex-direction:column;overflow:hidden;transform:scale(.94) translateY(12px);opacity:0;pointer-events:none;transition:transform .2s ease,opacity .2s ease;}
-  .ai-window.show{transform:scale(1) translateY(0);opacity:1;pointer-events:all;}
-  .ai-head{background:linear-gradient(135deg,#7c3aed,#a855f7);padding:12px 14px;display:flex;align-items:center;gap:9px;flex-shrink:0;}
-  .ai-head-icon{font-size:20px;}
-  .ai-head h3{color:#fff;font-size:14px;font-weight:700;flex:1;letter-spacing:.03em;}
-  .ai-head small{color:rgba(255,255,255,.7);font-size:10px;}
-  .ai-x{background:rgba(255,255,255,.2);border:none;color:#fff;width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;}
-  .ai-x:hover{background:rgba(255,255,255,.35);}
-  .ai-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:9px;scroll-behavior:smooth;}
-  .ai-msgs::-webkit-scrollbar{width:3px;}
-  .ai-msgs::-webkit-scrollbar-thumb{background:rgba(124,58,237,.2);border-radius:2px;}
-  .ai-row{display:flex;gap:7px;align-items:flex-start;}
-  .ai-row.me{flex-direction:row-reverse;}
-  .ai-ava{width:26px;height:26px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;background:linear-gradient(135deg,#7c3aed,#a855f7);}
-  .ai-row.me .ai-ava{background:#a07820;}
-  .ai-bub{max-width:82%;padding:8px 12px;border-radius:13px;font-size:13px;line-height:1.55;color:#2a1f0e;background:#f3e8ff;border:1px solid #e9d5ff;font-family:var(--font-ui);}
-  .ai-row.me .ai-bub{background:#fdf4e7;border-color:#f5dca0;}
-  .ai-chips{padding:0 12px 9px;display:flex;flex-wrap:wrap;gap:5px;flex-shrink:0;}
-  .ai-chip{font-size:11px;font-family:var(--font-ui);background:#f3e8ff;border:1px solid #e9d5ff;color:#6d28d9;border-radius:999px;padding:3px 10px;cursor:pointer;white-space:nowrap;}
-  .ai-chip:hover{background:#e9d5ff;}
-  .ai-dot-wrap{display:flex;gap:4px;padding:5px 6px;align-items:center;}
-  .ai-dot{width:7px;height:7px;border-radius:50%;background:#a855f7;animation:aiBounce 1.2s infinite;}
-  .ai-dot:nth-child(2){animation-delay:.2s;}
-  .ai-dot:nth-child(3){animation-delay:.4s;}
-  @keyframes aiBounce{0%,80%,100%{transform:scale(.55);opacity:.35}40%{transform:scale(1);opacity:1}}
-  .ai-inp-wrap{padding:9px 12px;border-top:1px solid rgba(124,58,237,.1);display:flex;gap:7px;flex-shrink:0;}
-  .ai-inp{flex:1;border:1.5px solid rgba(124,58,237,.2);border-radius:10px;padding:7px 11px;font-size:13px;font-family:var(--font-ui);color:#2a1f0e;background:#faf5ff;outline:none;resize:none;line-height:1.4;max-height:80px;}
-  .ai-inp:focus{border-color:#a855f7;}
-  .ai-go{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;align-self:flex-end;flex-shrink:0;transition:opacity .12s;}
-  .ai-go:hover{opacity:.85;}
-  .ai-go:disabled{opacity:.35;cursor:not-allowed;}
-  @media(max-width:600px){.ai-fab{bottom:76px;right:12px;}.ai-window{right:12px;width:calc(100vw - 24px);bottom:140px;}}
+  /* AI FAB button */
+  .ai-fab-wrap{position:fixed;bottom:24px;right:20px;z-index:500;display:flex;flex-direction:column;align-items:flex-end;gap:0;}
+  .ai-fab{position:relative;height:52px;border-radius:26px;background:linear-gradient(135deg,#6d28d9,#a855f7);border:none;box-shadow:0 4px 24px rgba(109,40,217,.5);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;padding:0 20px 0 16px;transition:transform .15s,box-shadow .15s;min-width:52px;overflow:hidden;}
+  .ai-fab:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(109,40,217,.65);}
+  .ai-fab.active{background:linear-gradient(135deg,#4c1d95,#6d28d9);}
+  .ai-fab-icon{font-size:22px;position:relative;z-index:1;flex-shrink:0;}
+  .ai-fab-text{color:#fff;font-size:13px;font-weight:600;font-family:var(--font-ui);white-space:nowrap;letter-spacing:.01em;transition:max-width .3s,opacity .3s;max-width:200px;opacity:1;}
+  .ai-fab-text.hide{max-width:0;opacity:0;overflow:hidden;}
+  .ai-fab-pulse{position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%;background:#a5f3fc;animation:fabPulse 2s ease-in-out infinite;}
+  @keyframes fabPulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.4);opacity:.5;}}
+  @keyframes labelSlide{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  .ai-fab-label-close{background:rgba(255,255,255,.12);border:none;color:#cbd5e1;width:18px;height:18px;border-radius:50%;cursor:pointer;font-size:10px;line-height:1;padding:0;flex-shrink:0;}
+  .ai-fab-label-close:hover{background:rgba(255,255,255,.25);}
+  @media(max-width:600px){.ai-fab-wrap{bottom:76px;right:14px;}}.ai-window{right:12px;width:calc(100vw - 24px);bottom:140px;}}
 
   /* Советы новичку */
   .tip-box{display:flex;gap:9px;align-items:flex-start;background:#fffbeb;border:1.5px solid #f59e0b;border-radius:var(--radius);padding:11px 14px;margin-bottom:1.1rem;font-size:13px;color:#78350f;font-family:var(--font-ui);line-height:1.5;box-shadow:0 2px 8px rgba(245,158,11,.1);}
@@ -318,11 +290,12 @@ html, body { min-height:100vh; background:var(--bg-page); color:var(--text-prima
 
   <!-- ===== AI FAB + WINDOW ===== -->
 <div class="ai-fab-wrap" id="aiFabWrap">
-  <button class="ai-fab" id="aiFab">📖</button>
-  <div class="ai-fab-hint" id="aiFabHint">
-    <span>❓ Вопросы по правилам D&D?</span>
-    <button class="ai-fab-hint-close" onclick="document.getElementById('aiFabWrap').classList.add('hint-hidden');localStorage.setItem('ai_hint_seen','1')">✕</button>
-  </div>
+  <button class="ai-fab" id="aiFab" aria-label="Помощник по правилам D&D">
+    <span class="ai-fab-icon">📖</span>
+    <span class="ai-fab-text" id="aiFabText">Есть вопросы? Спроси!</span>
+    <span class="ai-fab-pulse"></span>
+  </button>
+  
 </div>
 <div class="ai-window" id="aiWin">
   <div class="ai-head">
@@ -1524,15 +1497,16 @@ function showDoneModal(){
 
 // ===== AI ASSISTANT =====
 (function(){
-  // Show hint only once
-  if(!localStorage.getItem('ai_hint_seen')){
-    setTimeout(function(){
-      var wrap=document.getElementById('aiFabWrap');
-      if(wrap) wrap.classList.remove('hint-hidden');
-    }, 2000);
+  // Show label hint only once, with delay
+  var hintEl=document.getElementById('aiFabHint');
+  if(localStorage.getItem('ai_hint_seen')){
+    if(hintEl) hintEl.style.display='none';
   } else {
-    var wrap=document.getElementById('aiFabWrap');
-    if(wrap) wrap.classList.add('hint-hidden');
+    if(hintEl) hintEl.style.display='none'; // hidden initially
+    setTimeout(function(){
+      var h=document.getElementById('aiFabHint');
+      if(h) h.style.display='flex';
+    }, 1500);
   }
   var SYS="Ты — помощник по правилам D&D 5e, строго опирающийся только на Player's Handbook (PHB).\n\nПРАВИЛА:\n- Отвечай ТОЛЬКО по Player's Handbook 5-го издания\n- Если вопрос не про D&D/PHB — вежливо откажись\n- Указывай главу PHB (например: PHB, гл.7)\n- Отвечай на русском языке\n- Не более 200 слов\n- Не придумывай правила которых нет в PHB\n- Ключевые термины выделяй **жирным**";
 
@@ -1559,7 +1533,17 @@ function showDoneModal(){
     open=!open;
     win.classList.toggle('show',open);
     fab.classList.toggle('active',open);
-    if(open){inp.focus();scroll();}
+    // Stop pulse when open
+    var pulse=fab.querySelector('.ai-fab-pulse');
+    if(pulse) pulse.style.animationPlayState=open?'paused':'running';
+    // Hide hint when opened
+    if(open){
+      var h=document.getElementById('aiFabHint');
+      if(h) h.style.display='none';
+      localStorage.setItem('ai_hint_seen','1');
+      inp.focus();
+      scroll();
+    }
   }
   function scroll(){setTimeout(function(){msgsEl.scrollTop=msgsEl.scrollHeight;},60);}
 
@@ -1604,9 +1588,20 @@ function showDoneModal(){
     })
     .then(function(d){
       hideTyping();
-      var reply=d.content&&d.content[0]&&d.content[0].text
-        ? d.content[0].text
-        : (d.error ? '⚠️ Ошибка API: '+d.error.message : 'Пустой ответ.');
+      var reply='';
+      if(d.content&&d.content[0]&&d.content[0].text){
+        reply=d.content[0].text;
+      } else if(d.error){
+        var code=d.error.code||0;
+        var msg=d.error.message||'';
+        if(code===429||msg.indexOf('quota')>-1||msg.indexOf('Quota')>-1){
+          reply='Превышен дневной лимит бесплатных запросов (20/день). Попробуй завтра или создай новый Google аккаунт на aistudio.google.com и обнови ключ GEMINI_API_KEY в Cloudflare.';
+        } else {
+          reply='⚠️ Ошибка API ('+code+'): '+(msg.slice(0,100)||'неизвестная ошибка');
+        }
+      } else {
+        reply='Нет ответа. Попробуй ещё раз.';
+      }
       hist.push({role:'assistant',content:reply});
       addMsg('bot',reply);
     })
