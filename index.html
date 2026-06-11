@@ -211,6 +211,13 @@ html, body { min-height:100vh; background:var(--bg-page); color:var(--text-prima
   .btn { padding:8px 12px; font-size:12px; }
 }
 @media(prefers-reduced-motion:reduce) { * { transition:none !important; } }
+@media print {
+  .ai-fab-wrap,.bottom-nav,.progress-wrap,.summary-bar,
+  .page-bg,.tip-box,#aiWin,.kd-preview { display:none !important; }
+  .step-container { background:white !important; padding:0 !important; }
+  .sheet-wrap { box-shadow:none !important; border:1px solid #ddd !important; }
+  .sheet-hero { background:#2a1f0e !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+}
 
   .ai-btn{position:fixed;bottom:80px;right:20px;z-index:100;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a855f7);border:2px solid rgba(168,85,247,.4);box-shadow:0 4px 20px rgba(124,58,237,.4);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;transition:transform .15s;}
   .ai-btn:hover{transform:scale(1.08);}
@@ -219,11 +226,11 @@ html, body { min-height:100vh; background:var(--bg-page); color:var(--text-prima
   @media(max-width:600px){.ai-btn{bottom:75px;right:12px;}}
 
   /* ===== AI ASSISTANT ===== */
-  .ai-fab-wrap{position:fixed;bottom:80px;right:20px;z-index:500;display:flex;align-items:flex-end;gap:8px;flex-direction:row-reverse;}
+  .ai-fab-wrap{position:fixed;bottom:80px;right:20px;z-index:500;display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
   .ai-fab-wrap.hint-hidden .ai-fab-hint{display:none;}
-  .ai-fab-hint{background:#1e293b;color:#f8fafc;font-size:12px;font-family:var(--font-ui);padding:8px 12px;border-radius:10px;border-bottom-right-radius:2px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,.3);white-space:nowrap;animation:hintPop .4s ease;}
+  .ai-fab-hint{background:#1e293b;color:#f8fafc;font-size:12px;font-family:var(--font-ui);padding:8px 12px;border-radius:10px;border-bottom-right-radius:4px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,.4);white-space:nowrap;animation:hintPop .4s ease;position:relative;}
   @keyframes hintPop{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
-  .ai-fab-hint::after{content:'';position:absolute;right:-6px;bottom:12px;border:6px solid transparent;border-left-color:#1e293b;}
+  .ai-fab-hint::after{content:'';position:absolute;bottom:-9px;right:17px;border:5px solid transparent;border-top-color:#1e293b;}
   .ai-fab-hint-close{background:rgba(255,255,255,.15);border:none;color:#f8fafc;width:18px;height:18px;border-radius:50%;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   .ai-fab{position:relative;width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;box-shadow:0 4px 20px rgba(124,58,237,.45);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:24px;transition:transform .15s;}
   .ai-fab{position:fixed;bottom:80px;right:20px;z-index:500;width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;box-shadow:0 4px 20px rgba(124,58,237,.45);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:24px;transition:transform .15s,box-shadow .15s;}
@@ -1322,11 +1329,11 @@ function renderSheet(){
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
           <input id="sheetNameInput" type="text" value="${state.name||''}" placeholder="Введи имя героя..."
             style="font-size:1.3rem;font-weight:700;color:var(--gold-light);background:transparent;border:none;border-bottom:1.5px solid rgba(255,255,255,.2);outline:none;font-family:var(--font-display);min-width:160px;max-width:280px;padding:2px 4px;"
-            oninput="state.name=this.value;document.querySelectorAll('.hero-name-display').forEach(el=>el.textContent=this.value||'Безымянный герой')">
-          <button onclick="const n=randomName();state.name=n;const inp=document.getElementById('sheetNameInput');if(inp)inp.value=n;document.querySelectorAll('.hero-name-display').forEach(el=>el.textContent=n);"
+            oninput="state.name=this.value;">
+          <button onclick="const n=randomName();state.name=n;const inp=document.getElementById('sheetNameInput');if(inp)inp.value=n;"
             style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#f5f0e8;border-radius:5px;padding:3px 9px;font-size:11px;cursor:pointer;font-family:var(--font-ui);">🎲</button>
         </div>
-        <div style="font-size:13px;color:#c4a878;margin-bottom:6px;" class="hero-name-display">${r?.name||'—'} ${c?.name||'—'}</div>
+        <div style="font-size:13px;color:#c4a878;margin-bottom:6px;" >${r?.name||'—'} · ${c?.name||'—'}</div>
         <div class="sheet-meta">
           <div class="sheet-meta-item">Раса: <strong>${r?.name||'—'}</strong></div>
           <div class="sheet-meta-item">Класс: <strong>${c?.name||'—'}</strong></div>
