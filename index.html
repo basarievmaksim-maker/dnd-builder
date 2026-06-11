@@ -608,17 +608,17 @@ const SPELLS = {
       {id:'cc2',name:'Наставление',    school:'Прорицание',  desc:'Добавляет к4 к проверке характеристики союзника.'},
       {id:'cc3',name:'Малое волшебство',school:'Преобразование',desc:'Незначительный магический эффект.'},
       {id:'cc4',name:'Свет',          school:'Преобразование',desc:'Предмет излучает свет в 20 фт. 1 час.'},
-      {id:'cc5',name:'Сопротивление', school:'Ограждение',  desc:'Цель добавляет к4 к одному спасброску (концентрация до 1 мин).'},
+      {id:'cc5',name:'Сопротивление', school:'Защита',  desc:'Цель добавляет к4 к одному спасброску (концентрация до 1 мин).'},
       {id:'cc6',name:'Починка',        school:'Преобразование',desc:'Чинит небольшой разрыв или перелом предмета.'},
     ],
     spells1:[
       {id:'cs1',name:'Лечение ран',          school:'Воплощение 1 ур.',  desc:'1к8 + мод. хп при прикосновении.'},
       {id:'cs2',name:'Благословение',        school:'Очарование 1 ур.',  desc:'До 3 существ: +к4 к броскам атаки и спасброскам. Концентрация 1 мин.'},
       {id:'cs3',name:'Команда',              school:'Очарование 1 ур.',  desc:'Одно слово — приказ (Беги, Упади, Стой). Спасбросок Мудрости.'},
-      {id:'cs4',name:'Щит веры',             school:'Ограждение 1 ур.',  desc:'+2 к КД цели. Концентрация 10 минут.'},
+      {id:'cs4',name:'Щит веры',             school:'Защита 1 ур.',  desc:'+2 к КД цели. Концентрация 10 минут.'},
       {id:'cs5',name:'Исцеляющее слово',     school:'Воплощение 1 ур.',  desc:'Бонусным действием: 1к4 + мод. хп в 60 фт. Спасает умирающих.'},
       {id:'cs6',name:'Направленный удар',    school:'Прорицание 1 ур.',  desc:'Следующий бросок атаки союзника — с преимуществом (реакция).'},
-      {id:'cs7',name:'Защита от зла и добра',school:'Ограждение 1 ур.',  desc:'Аномалии и нечисть не могут вас очаровать или напугать. Концентрация 10 мин.'},
+      {id:'cs7',name:'Защита от зла и добра',school:'Защита 1 ур.',  desc:'Аномалии и нечисть не могут вас очаровать или напугать. Концентрация 10 мин.'},
       {id:'cs8',name:'Обнаружение зла и добра',school:'Прорицание 1 ур.',desc:'Знаете о нечисти, небожителях и феях в 30 фт. Концентрация 10 мин.'},
       {id:'cs9',name:'Возмездие',            school:'Воплощение 1 ур.',  desc:'Реакция: 2к10 + мод. урона излучением атаковавшему.'},
       {id:'cs10',name:'Волшебный снаряд',    school:'Воплощение 1 ур.',  desc:'3 болта по 1к4+1 урона каждый. Автоматически попадают.'},
@@ -630,7 +630,7 @@ const SPELLS = {
       {id:'dc2',name:'Огонь друидов', school:'Воплощение',    desc:'1к8 огненного (спасбросок Ловкости). Горящие предметы.'},
       {id:'dc3',name:'Шип',          school:'Преобразование', desc:'Атака: 1к6 колющего + скорость цели −10 фт. до следующего хода.'},
       {id:'dc4',name:'Чаща и камень',school:'Преобразование', desc:'Дальняя атака: 1к8 дробящего, игнорирует полуукрытие.'},
-      {id:'dc5',name:'Сопротивление',school:'Ограждение',    desc:'К4 к одному спасброску при концентрации (до 1 мин).'},
+      {id:'dc5',name:'Сопротивление',school:'Защита',    desc:'К4 к одному спасброску при концентрации (до 1 мин).'},
       {id:'dc6',name:'Малое волшебство',school:'Преобразование',desc:'Незначительный природный эффект.'},
     ],
     spells1:[
@@ -651,13 +651,13 @@ const SPELLS = {
     spells1:[
       {id:'ps1',name:'Лечение ран',           school:'Воплощение 1 ур.',  desc:'1к8 + мод. хп при прикосновении.'},
       {id:'ps2',name:'Священный меч',         school:'Воплощение 1 ур.',  desc:'+2к8 лучистого урона при попаданиях. Концентрация 1 мин.'},
-      {id:'ps3',name:'Щит веры',             school:'Ограждение 1 ур.',  desc:'+2 КД цели. Концентрация 10 мин.'},
+      {id:'ps3',name:'Щит веры',             school:'Защита 1 ур.',  desc:'+2 КД цели. Концентрация 10 мин.'},
       {id:'ps4',name:'Благословение',         school:'Очарование 1 ур.',  desc:'До 3 существ: +к4 к атаке и спасброскам. Концентрация 1 мин.'},
       {id:'ps5',name:'Команда',              school:'Очарование 1 ур.',  desc:'Одно слово — приказ (спасбросок Мудрости).'},
       {id:'ps6',name:'Героизм',              school:'Очарование 1 ур.',  desc:'Иммунитет к страху + временные хп/ход. Концентрация 1 мин.'},
       {id:'ps7',name:'Кара мести',           school:'Воплощение 1 ур.',  desc:'Бонусное действие после попадания: +2к6 урона.'},
       {id:'ps8',name:'Гром небесный',        school:'Воплощение 1 ур.',  desc:'2к6 грома при попадании, цель сбита с ног (спасбросок Силы).'},
-      {id:'ps9',name:'Защита от зла и добра',school:'Ограждение 1 ур.',  desc:'Нечисть и аномалии не могут вас очаровать. 10 мин.'},
+      {id:'ps9',name:'Защита от зла и добра',school:'Защита 1 ур.',  desc:'Нечисть и аномалии не могут вас очаровать. 10 мин.'},
       {id:'ps10',name:'Обнаружение зла',     school:'Прорицание 1 ур.',  desc:'Знаете о нечисти и небожителях в 30 фт. 10 мин.'},
     ]
   },
@@ -667,7 +667,7 @@ const SPELLS = {
       {id:'rs1',name:'Животная дружба',    school:'Очарование 1 ур.',   desc:'Очаровываете зверя с Инт ≤ 3 на 24 часа.'},
       {id:'rs2',name:'Удар охотника',      school:'Воплощение 1 ур.',   desc:'+1к6 к каждому попаданию по цели. Концентрация 1 час.'},
       {id:'rs3',name:'Детектирование яда', school:'Прорицание 1 ур.',   desc:'Яды и ядовитые существа в 30 фт. 10 мин.'},
-      {id:'rs4',name:'Тревога',           school:'Ограждение 1 ур.',   desc:'Охраняет область 20 фт. — тревога при пересечении. 8 часов.'},
+      {id:'rs4',name:'Тревога',           school:'Защита 1 ур.',   desc:'Охраняет область 20 фт. — тревога при пересечении. 8 часов.'},
       {id:'rs5',name:'Туманный шаг',       school:'Преобразование 1 ур.',desc:'Бонусным действием телепортируетесь до 30 фт.'},
       {id:'rs6',name:'Длинный шаг',        school:'Преобразование 1 ур.',desc:'Скорость +10 фт., прыжки удваиваются. 1 час.'},
       {id:'rs7',name:'Разговор с животными',school:'Прорицание 1 ур.',  desc:'Говорите со зверями. Ритуал.'},
@@ -689,7 +689,7 @@ const SPELLS = {
     ],
     spells1:[
       {id:'ss1',name:'Волшебный снаряд',school:'Воплощение 1 ур.',  desc:'3 болта по 1к4+1. Автоматически попадают.'},
-      {id:'ss2',name:'Щит',            school:'Ограждение 1 ур.',  desc:'Реакция: +5 КД до следующего хода.'},
+      {id:'ss2',name:'Щит',            school:'Защита 1 ур.',  desc:'Реакция: +5 КД до следующего хода.'},
       {id:'ss3',name:'Ожог',           school:'Воплощение 1 ур.',  desc:'3к10 огня. Существо горит (1к10 огня/ход, спасбросок Ловкости).'},
       {id:'ss4',name:'Усыпление',      school:'Очарование 1 ур.',  desc:'Усыпляет существ с суммарными хп до 5к8.'},
       {id:'ss5',name:'Очарование личности',school:'Очарование 1 ур.',desc:'Цель считает вас другом на 1 час (спасбросок Мудрости).'},
@@ -709,10 +709,10 @@ const SPELLS = {
     ],
     spells1:[
       {id:'wks1',name:'Шёпот теней',         school:'Очарование 1 ур.',  desc:'Страх: помеха на атаки (спасбросок Мудрости). 1 мин.'},
-      {id:'wks2',name:'Армор тьмы',          school:'Ограждение 1 ур.',  desc:'КД = 13 + мод. Ловкости. 8 часов.'},
+      {id:'wks2',name:'Армор тьмы',          school:'Защита 1 ур.',  desc:'КД = 13 + мод. Ловкости. 8 часов.'},
       {id:'wks3',name:'Очарование личности', school:'Очарование 1 ур.',  desc:'Цель считает вас другом (спасбросок Мудрости). 1 час.'},
       {id:'wks4',name:'Адское возмездие',    school:'Воплощение 1 ур.',  desc:'Реакция: 2к10 огненного атаковавшему.'},
-      {id:'wks5',name:'Защита от зла',       school:'Ограждение 1 ур.',  desc:'Существа выбранного типа не могут вас очаровать. 10 мин.'},
+      {id:'wks5',name:'Защита от зла',       school:'Защита 1 ур.',  desc:'Существа выбранного типа не могут вас очаровать. 10 мин.'},
       {id:'wks6',name:'Тьма',               school:'Воплощение 1 ур.',  desc:'Магическая тьма в радиусе 15 фт. 10 мин.'},
       {id:'wks7',name:'Шум безумия',         school:'Очарование 1 ур.',  desc:'Жертва не может реагировать (спасбросок Мудрости). Концентрация 1 мин.'},
       {id:'wks8',name:'Путы преисподней',    school:'Воплощение 1 ур.',  desc:'Адские цепи удерживают существо (спасбросок Силы). 1 мин.'},
@@ -731,7 +731,7 @@ const SPELLS = {
     ],
     spells1:[
       {id:'wzs1',name:'Волшебный снаряд',school:'Воплощение 1 ур.',   desc:'3 болта по 1к4+1. Автоматически попадают.'},
-      {id:'wzs2',name:'Щит',            school:'Ограждение 1 ур.',   desc:'Реакция: +5 КД до следующего хода.'},
+      {id:'wzs2',name:'Щит',            school:'Защита 1 ур.',   desc:'Реакция: +5 КД до следующего хода.'},
       {id:'wzs3',name:'Ожог',           school:'Воплощение 1 ур.',   desc:'3к10 огня. Горит (1к10 огня/ход).'},
       {id:'wzs4',name:'Туманный шаг',   school:'Преобразование 1 ур.',desc:'Бонусным действием телепортируетесь на 30 фт.'},
       {id:'wzs5',name:'Волна грома',    school:'Воплощение 1 ур.',   desc:'2к8 грома в 15-фт кубе, отброс на 10 фт.'},
@@ -800,7 +800,6 @@ function rebuildSteps(){
   const c=CLASSES.find(x=>x.id===state.cls);
   if(c&&c.isMagic) s.push({id:'spells',label:'Заклинания'});
   s.push({id:'equipment',label:'Снаряжение'});
-  s.push({id:'name',label:'Имя'});
   s.push({id:'sheet',label:'Лист персонажа'});
   STEPS=s;
 }
@@ -973,7 +972,7 @@ function randomize(){
   state.selectedArmor=aa[aa.length-1]?.id||'none';
   state.selectedShield=hasShieldProf();
   rollGold();
-  if(!state.name) state.name = randomName();
+  state.name = randomName(); // Always set a name on randomize
   rebuildSteps();
   state.step=STEPS.length-1;
   render();
@@ -1018,8 +1017,7 @@ function renderNav(){
 function renderStep(){
   const id=STEPS[state.step]?.id;
   const el=document.getElementById('stepContainer');
-  if(id==='name') el.innerHTML=renderName();
-  else if(id==='race') el.innerHTML=renderRace();
+  if(id==='race') el.innerHTML=renderRace();
   else if(id==='class') el.innerHTML=renderClass();
   else if(id==='background') el.innerHTML=renderBg();
   else if(id==='stats') el.innerHTML=renderStats();
@@ -1137,12 +1135,12 @@ function renderStats(){
   const pct=Math.round((1-left/27)*100);
   // Priority mapping from class hints
   const STAT_DESC={
-    STR:'Удары в ближнем бою, Athletics',
-    DEX:'Броски атаки луком, КД лёгкой брони, инициатива',
+    STR:'Удары в ближнем бою, Атлетика',
+    DEX:'Дальний бой, КД лёгкой брони, Инициатива',
     CON:'Хиты и концентрация заклинаний',
-    INT:'Заклинания волшебника, Arcana, History',
-    WIS:'Заклинания жреца/друида, Perception',
-    CHA:'Заклинания барда/колдуна, Persuasion'
+    INT:'Заклинания волшебника, Магия, История',
+    WIS:'Заклинания жреца/друида, Восприятие',
+    CHA:'Заклинания барда/колдуна, Убеждение'
   };
   const pri1=c?.primaryStats||[];
   const pri2=c?Object.keys(c.statHints||{}).filter(k=>!pri1.includes(k)&&(c.statHints[k]||'').startsWith('★★★')):[];
@@ -1204,7 +1202,9 @@ function renderSpells(){
   <div class="spell-info-bar">
     <span>Заговоры: <strong>${state.selectedCantrips.length} / ${maxC}</strong></span>
     <span>Заклинания 1 ур.: <strong>${state.selectedSpells.length} / ${maxS}</strong></span>
-    <span>Характеристика: <strong>${STAT_NAMES[c.spellAbility]}</strong></span>
+    <span>Хар-ка заклинаний: <strong>${STAT_NAMES[c.spellAbility]}</strong></span>
+    <span>Бонус атаки: <strong>к20 + ${2+mod(totalStats()[c.spellAbility])>=0?'+':'' }${2+mod(totalStats()[c.spellAbility])}</strong></span>
+    <span>Сл спасброска: <strong>${8+2+mod(totalStats()[c.spellAbility])}</strong></span>
     <span>Ячейки: <strong>${c.slots?.[0]||0} × 1 ур.</strong></span>
   </div>`;
   if(sp.cantrips.length&&maxC>0){
@@ -1297,8 +1297,14 @@ function renderSheet(){
           onerror="this.style.display='none'">
       </div>
       <div class="sheet-hero-info">
-        <div class="sheet-char-name">${state.name||'Безымянный герой'}</div>
-        <div style="font-size:13px;color:#c4a878;margin-bottom:6px;">${r?.name||'—'} ${c?.name||'—'}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
+          <input id="sheetNameInput" type="text" value="${state.name||''}" placeholder="Введи имя героя..."
+            style="font-size:1.3rem;font-weight:700;color:var(--gold-light);background:transparent;border:none;border-bottom:1.5px solid rgba(255,255,255,.2);outline:none;font-family:var(--font-display);min-width:160px;max-width:280px;padding:2px 4px;"
+            oninput="state.name=this.value;document.querySelectorAll('.hero-name-display').forEach(el=>el.textContent=this.value||'Безымянный герой')">
+          <button onclick="const n=randomName();state.name=n;const inp=document.getElementById('sheetNameInput');if(inp)inp.value=n;document.querySelectorAll('.hero-name-display').forEach(el=>el.textContent=n);"
+            style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#f5f0e8;border-radius:5px;padding:3px 9px;font-size:11px;cursor:pointer;font-family:var(--font-ui);">🎲</button>
+        </div>
+        <div style="font-size:13px;color:#c4a878;margin-bottom:6px;" class="hero-name-display">${r?.name||'—'} ${c?.name||'—'}</div>
         <div class="sheet-meta">
           <div class="sheet-meta-item">Раса: <strong>${r?.name||'—'}</strong></div>
           <div class="sheet-meta-item">Класс: <strong>${c?.name||'—'}</strong></div>
