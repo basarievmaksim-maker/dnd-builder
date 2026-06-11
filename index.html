@@ -59,7 +59,7 @@ html, body { min-height:100vh; background:var(--bg-page); color:var(--text-prima
 #app { min-height:100vh; display:flex; flex-direction:column; }
 .step-container { flex:1; padding:1.25rem; max-width:1100px; width:100%; margin:0 auto; background:rgba(245,240,232,0.97); }
 .step-header { margin-bottom:1.25rem; }
-.step-header h2 { font-size:clamp(1.1rem,3vw,1.4rem); font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--gold); margin-bottom:.2rem; }
+.step-header h2 { font-size:clamp(1.1rem,3vw,1.4rem); font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--gold); margin-bottom:.2rem; padding-left:.75rem; border-left:3px solid var(--gold); }
 .step-header p { font-size:.9rem; color:var(--text-secondary); font-style:italic; }
 
 /* CARDS */
@@ -70,7 +70,7 @@ html, body { min-height:100vh; background:var(--bg-page); color:var(--text-prima
 .choice-card.selected { border-color:var(--gold); background:var(--bg-card-sel); box-shadow:0 0 0 2px rgba(160,120,32,.2); }
 .choice-card.selected .card-chk { display:flex; }
 .card-chk { display:none; position:absolute; top:7px; right:7px; width:20px; height:20px; border-radius:50%; background:var(--gold); color:#fff; font-size:12px; font-weight:700; align-items:center; justify-content:center; z-index:2; }
-.card-img-wrap { position:relative; width:100%; aspect-ratio:3/4; overflow:hidden; background:#e8dfc8; display:flex; align-items:center; justify-content:center; }
+.card-img-wrap { position:relative; width:100%; aspect-ratio:3/4; overflow:hidden; background:linear-gradient(135deg,#e8dfc8,#d4c9a8); display:flex; align-items:center; justify-content:center; }
 .card-img-wrap img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 .card-emoji { position:relative; z-index:0; flex-shrink:0; }
 .card-body { padding:9px 11px; }
@@ -249,6 +249,26 @@ html, body { min-height:100vh; background:var(--bg-page); color:var(--text-prima
   .ai-go:hover{opacity:.85;}
   .ai-go:disabled{opacity:.35;cursor:not-allowed;}
   @media(max-width:600px){.ai-fab{bottom:76px;right:12px;}.ai-window{right:12px;width:calc(100vw - 24px);bottom:140px;}}
+
+  /* Советы новичку */
+  .tip-box{display:flex;gap:9px;align-items:flex-start;background:#fffbeb;border:1px solid #fbbf24;border-radius:var(--radius);padding:10px 13px;margin-bottom:1.1rem;font-size:13px;color:#78350f;font-family:var(--font-ui);line-height:1.5;}
+  .tip-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
+
+  /* Совместимость */
+  .synergy-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:var(--font-ui);padding:2px 7px;border-radius:999px;font-weight:600;margin-top:4px;}
+
+  /* Имя персонажа */
+  .name-wrap{background:var(--bg-card);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:1.1rem;max-width:480px;margin-bottom:1.25rem;box-shadow:var(--shadow);}
+  .name-input{width:100%;border:1.5px solid var(--border);border-radius:var(--radius);padding:9px 13px;font-size:1rem;font-family:var(--font-display);color:var(--text-primary);background:#fff;outline:none;margin:8px 0;}
+  .name-input:focus{border-color:var(--gold);}
+  .name-btn{font-family:var(--font-ui);font-size:12px;font-weight:600;padding:6px 14px;border-radius:var(--radius);border:1.5px solid var(--border-strong);background:#fff;color:var(--text-secondary);cursor:pointer;}
+  .name-btn:hover{border-color:var(--gold);color:var(--gold);}
+
+  /* Подсказки на листе */
+  .tooltip-wrap{position:relative;display:inline-flex;align-items:center;gap:3px;cursor:help;}
+  .tooltip-wrap .tt{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1e293b;color:#f8fafc;font-size:11px;font-family:var(--font-ui);padding:5px 9px;border-radius:6px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:50;line-height:1.4;text-align:center;min-width:140px;}
+  .tooltip-wrap:hover .tt{opacity:1;}
+  .tt-icon{font-size:11px;color:var(--text-muted);flex-shrink:0;}
 </style>
 </head>
 <body>
@@ -326,6 +346,47 @@ const P = {
 };
 
 const STAT_NAMES = {STR:'Сила',DEX:'Ловкость',CON:'Телосложение',INT:'Интеллект',WIS:'Мудрость',CHA:'Харизма'};
+
+// Совместимость расы и класса: 3=отлично, 2=хорошо, 1=нормально
+const SYNERGY = {
+  human:     {barbarian:2,bard:2,cleric:2,druid:2,fighter:3,monk:2,paladin:3,ranger:2,rogue:2,sorcerer:2,warlock:2,wizard:2},
+  elf:       {barbarian:1,bard:3,cleric:2,druid:2,fighter:2,monk:3,paladin:1,ranger:3,rogue:3,sorcerer:2,warlock:2,wizard:3},
+  dwarf:     {barbarian:3,bard:1,cleric:3,druid:2,fighter:3,monk:1,paladin:3,ranger:2,rogue:1,sorcerer:1,warlock:1,wizard:1},
+  gnome:     {barbarian:1,bard:2,cleric:2,druid:2,fighter:1,monk:1,paladin:1,ranger:1,rogue:2,sorcerer:2,warlock:3,wizard:3},
+  'half-elf':{barbarian:1,bard:3,cleric:2,druid:2,fighter:2,monk:1,paladin:3,ranger:2,rogue:3,sorcerer:3,warlock:3,wizard:2},
+  'half-orc':{barbarian:3,bard:1,cleric:2,druid:1,fighter:3,monk:2,paladin:2,ranger:2,rogue:2,sorcerer:1,warlock:1,wizard:1},
+  halfling:  {barbarian:1,bard:2,cleric:1,druid:1,fighter:1,monk:2,paladin:1,ranger:2,rogue:3,sorcerer:2,warlock:1,wizard:1},
+  dragonborn:{barbarian:2,bard:2,cleric:1,druid:1,fighter:3,monk:1,paladin:3,ranger:1,rogue:1,sorcerer:3,warlock:2,wizard:1},
+  tiefling:  {barbarian:1,bard:2,cleric:1,druid:1,fighter:1,monk:1,paladin:1,ranger:1,rogue:3,sorcerer:3,warlock:3,wizard:2},
+};
+
+// Имена по расам
+const NAMES = {
+  human:     ['Артур','Вильям','Эдвард','Изабель','Маргарет','Томас','Алиса','Генри'],
+  elf:       ['Аэриндел','Сильвана','Галадрил','Феанор','Элариэль','Тауриэль','Леголас','Арвен'],
+  dwarf:     ['Торин','Дварин','Бромбур','Глоин','Хельга','Брунда','Двалин','Ойн'],
+  gnome:     ['Тинкер','Физзл','Попрыгун','Вилли','Зигги','Никс','Бимбо','Спрокет'],
+  'half-elf':['Лирандел','Каэла','Фаэрон','Мириэль','Солан','Диана','Эверест','Лина'],
+  'half-orc':['Гаррош','Тракан','Ворона','Дурза','Мракор','Брута','Горак','Шарра'],
+  halfling:  ['Биллибо','Перегрин','Розочка','Сэмвайс','Поппи','Мерри','Даффи','Нелли'],
+  dragonborn:['Ауракс','Крив','Мехен','Надар','Патрин','Рива','Шейра','Торинн'],
+  tiefling:  ['Акта','Диспаир','Инвидия','Мортос','Ревель','Скорн','Зария','Феликс'],
+};
+
+function getSynergy(race, cls) {
+  if(!race||!cls) return 0;
+  return (SYNERGY[race]||{})[cls]||2;
+}
+function getSynergyLabel(n) {
+  return n===3?{text:'Отличный выбор ✨',color:'#166534',bg:'rgba(20,120,40,.1)',border:'rgba(20,120,40,.25)'}
+        :n===2?{text:'Хорошее сочетание',color:'#92400e',bg:'rgba(180,100,0,.07)',border:'rgba(180,100,0,.2)'}
+              :{text:'Нестандартный выбор',color:'#6b7280',bg:'rgba(0,0,0,.04)',border:'rgba(0,0,0,.1)'};
+}
+function randomName() {
+  const race = state.race||'human';
+  const arr = NAMES[race]||NAMES.human;
+  return arr[Math.floor(Math.random()*arr.length)];
+}
 const STATS = ['STR','DEX','CON','INT','WIS','CHA'];
 const POINT_COST = {8:0,9:1,10:2,11:3,12:4,13:5,14:7,15:9};
 
@@ -725,11 +786,11 @@ const ARMOR=[
 ];
 
 // STATE
-let state={step:0,race:null,cls:null,background:null,stats:{STR:8,DEX:8,CON:8,INT:8,WIS:8,CHA:8},selectedCantrips:[],selectedSpells:[],selectedWeapons:[],selectedArmor:'none',selectedShield:false,startGold:0};
+let state={step:0,race:null,cls:null,background:null,name:'',stats:{STR:8,DEX:8,CON:8,INT:8,WIS:8,CHA:8},selectedCantrips:[],selectedSpells:[],selectedWeapons:[],selectedArmor:'none',selectedShield:false,startGold:0};
 let STEPS=[];
 
 function rebuildSteps(){
-  const s=[{id:'race',label:'Раса'},{id:'class',label:'Класс'},{id:'background',label:'Предыстория'},{id:'stats',label:'Характеристики'}];
+  const s=[{id:'name',label:'Имя'},{id:'race',label:'Раса'},{id:'class',label:'Класс'},{id:'background',label:'Предыстория'},{id:'stats',label:'Характеристики'}];
   const c=CLASSES.find(x=>x.id===state.cls);
   if(c&&c.isMagic) s.push({id:'spells',label:'Заклинания'});
   s.push({id:'equipment',label:'Снаряжение'});
@@ -820,19 +881,79 @@ function hasShieldProf(){const c=CLASSES.find(x=>x.id===state.cls);return c&&c.p
 
 function rollGold(){state.startGold=Math.floor(Math.random()*50)+1;}
 
+function randomStats(){
+  // Pure random point buy distribution
+  STATS.forEach(k=>state.stats[k]=8);
+  let pts=27;
+  const keys=[...STATS].sort(()=>Math.random()-0.5);
+  for(let i=0;i<keys.length;i++){
+    const k=keys[i];
+    const isLast=(i===keys.length-1);
+    if(isLast){
+      while(pts>0&&state.stats[k]<15){
+        const nxt=state.stats[k]+1;
+        const cost=(POINT_COST[nxt]||0)-(POINT_COST[state.stats[k]]||0);
+        if(cost<=pts){state.stats[k]++;pts-=cost;}else break;
+      }
+    } else {
+      const maxPts=Math.min(9,Math.floor(pts*0.6));
+      const target=Math.floor(Math.random()*(maxPts+1));
+      let spent=0;
+      while(spent<target&&state.stats[k]<15){
+        const nxt=state.stats[k]+1;
+        const cost=(POINT_COST[nxt]||0)-(POINT_COST[state.stats[k]]||0);
+        if(cost<=pts&&spent+cost<=target){state.stats[k]++;pts-=cost;spent+=cost;}else break;
+      }
+    }
+  }
+  render();
+}
+
 function randomize(){
   state.race=RACES[Math.floor(Math.random()*RACES.length)].id;
   state.cls=CLASSES[Math.floor(Math.random()*CLASSES.length)].id;
   state.background=BACKGROUNDS[Math.floor(Math.random()*BACKGROUNDS.length)].id;
-  ['STR','DEX','CON','INT','WIS','CHA'].forEach(k=>state.stats[k]=8);
+  // Случайное распределение очков - приоритет по классу, с рандомом
+  STATS.forEach(k=>state.stats[k]=8);
+  const clsData = CLASSES.find(x=>x.id===state.cls);
+  // Shuffle stats with class priorities
+  let statPool = [...STATS];
+  // Sort: primary stats first, then shuffle rest
+  if(clsData && clsData.primaryStats) {
+    const pri = clsData.primaryStats;
+    statPool.sort((a,b)=>{
+      const aP = pri.includes(a)?0:1;
+      const bP = pri.includes(b)?0:1;
+      if(aP!==bP) return aP-bP;
+      return Math.random()-0.5;
+    });
+  } else {
+    statPool = statPool.sort(()=>Math.random()-0.5);
+  }
   let pts=27;
-  ['STR','DEX','CON','INT','WIS','CHA'].forEach(k=>{
-    while(pts>0&&state.stats[k]<15){
-      const nxt=state.stats[k]+1;
-      const cost=(POINT_COST[nxt]||0)-(POINT_COST[state.stats[k]]||0);
-      if(cost<=pts){state.stats[k]++;pts-=cost;}else break;
+  // Distribute randomly: each stat gets random amount within budget
+  for(let i=0;i<statPool.length;i++){
+    const k=statPool[i];
+    const remaining=statPool.length-1-i;
+    // Last stat gets remaining budget
+    if(remaining===0){
+      while(pts>0&&state.stats[k]<15){
+        const nxt=state.stats[k]+1;
+        const cost=(POINT_COST[nxt]||0)-(POINT_COST[state.stats[k]]||0);
+        if(cost<=pts){state.stats[k]++;pts-=cost;}else break;
+      }
+    } else {
+      // Random spend: between 0 and pts/remaining
+      const maxSpend=Math.min(9,Math.floor(pts/(remaining+1)*2));
+      const spend=Math.floor(Math.random()*(maxSpend+1));
+      let spent=0;
+      while(spent<spend&&state.stats[k]<15){
+        const nxt=state.stats[k]+1;
+        const cost=(POINT_COST[nxt]||0)-(POINT_COST[state.stats[k]]||0);
+        if(cost<=pts&&spent+cost<=spend){state.stats[k]++;pts-=cost;spent+=cost;}else break;
+      }
     }
-  });
+  }
   const c=CLASSES.find(x=>x.id===state.cls);
   if(c&&c.isMagic){
     const sp=SPELLS[state.cls]||{};
@@ -845,6 +966,7 @@ function randomize(){
   state.selectedArmor=aa[aa.length-1]?.id||'none';
   state.selectedShield=hasShieldProf();
   rollGold();
+  if(!state.name) state.name = randomName();
   rebuildSteps();
   state.step=STEPS.length-1;
   render();
@@ -866,6 +988,7 @@ function renderSummary(){
   const c=CLASSES.find(x=>x.id===state.cls);
   const bg=BACKGROUNDS.find(x=>x.id===state.background);
   let chips='';
+  if(state.name) chips+=`<div class="sb-chip"><span class="sb-label">Герой:</span><span class="sb-val">${state.name}</span></div>`;
   if(r) chips+=`<div class="sb-chip"><span class="sb-label">Раса:</span><span class="sb-val">${r.name}</span></div>`;
   if(c) chips+=`<div class="sb-chip"><span class="sb-label">Класс:</span><span class="sb-val">${c.name}</span></div>`;
   if(bg) chips+=`<div class="sb-chip"><span class="sb-label">Предыстория:</span><span class="sb-val">${bg.name}</span></div>`;
@@ -876,14 +999,18 @@ function renderSummary(){
 function renderNav(){
   document.getElementById('btnBack').style.visibility=state.step>0?'visible':'hidden';
   const last=state.step===STEPS.length-1;
-  document.getElementById('btnNext').textContent=last?'— Готово —':'Далее →';
-  document.getElementById('btnNext').disabled=last;
+  document.getElementById('btnNext').textContent=last?'✓ Готово':'Далее →';
+  document.getElementById('btnNext').disabled=false;
+  // Show random button only on first step
+  const randomBtn=document.getElementById('btnRandom');
+  if(randomBtn) randomBtn.style.display=state.step===0?'inline-flex':'none';
 }
 
 function renderStep(){
   const id=STEPS[state.step]?.id;
   const el=document.getElementById('stepContainer');
-  if(id==='race') el.innerHTML=renderRace();
+  if(id==='name') el.innerHTML=renderName();
+  else if(id==='race') el.innerHTML=renderRace();
   else if(id==='class') el.innerHTML=renderClass();
   else if(id==='background') el.innerHTML=renderBg();
   else if(id==='stats') el.innerHTML=renderStats();
@@ -895,15 +1022,29 @@ function renderStep(){
 
 function cardImg(img,emoji){
   return `<div class="card-img-wrap">
-    <span class="card-emoji" style="font-size:2.8rem;">${emoji}</span>
+    <span class="card-emoji" style="font-size:3.2rem;filter:drop-shadow(0 2px 8px rgba(0,0,0,.15));">${emoji}</span>
     <img src="${img}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;"
       onload="this.previousElementSibling.style.display='none'"
       onerror="this.style.display='none'">
   </div>`;
 }
 
+function renderName(){
+  return `<div class="step-header"><h2>Имя персонажа</h2><p>Как зовут твоего героя?</p></div>
+  <div class="tip-box"><span class="tip-icon">💡</span><span><b>Совет:</b> Имя не влияет на механики — выбирай любое которое нравится. Нажми <b>«Случайное имя»</b> чтобы получить имя по расе твоего персонажа.</span></div>
+  <div class="name-wrap">
+    <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;">Имя персонажа</div>
+    <input class="name-input" id="nameInput" type="text" placeholder="Введи имя героя..." value="${state.name||''}">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <button class="name-btn" id="randomNameBtn">🎲 Случайное имя</button>
+      <span style="font-size:12px;color:var(--text-muted);font-family:var(--font-ui);">Имена подбираются по расе персонажа</span>
+    </div>
+  </div>`;
+}
+
 function renderRace(){
   return `<div class="step-header"><h2>Выбор расы</h2><p>Раса определяет природные способности и бонусы к характеристикам</p></div>
+  <div class="tip-box"><span class="tip-icon">💡</span><span><b>Совет новичку:</b> Для первой игры выбери <b>Человека</b> — получишь +1 ко всем характеристикам и никаких ограничений. Или выбери расу которая тебе визуально нравится — это важнее оптимальности!</span></div>
   <div class="card-grid">${RACES.map(r=>`
     <div class="choice-card ${state.race===r.id?'selected':''}" data-race="${r.id}" style="position:relative;">
       <div class="card-chk">✓</div>
@@ -921,25 +1062,46 @@ function renderRace(){
 }
 
 function renderClass(){
+  const tips = {
+    barbarian:'🪓 Прост в игре, живуч, бьёт сильно. Идеален для новичка!',
+    fighter:'🛡️ Самый универсальный — подходит любому стилю игры.',
+    rogue:'🗡️ Много урона за один удар, отлично для скрытного стиля.',
+    cleric:'✝️ Лечит союзников и хорошо сражается. Команда будет благодарна!',
+    wizard:'📚 Самые мощные заклинания, но хрупкий. Для любителей магии.',
+    paladin:'⚜️ Сочетает бой и магию, мощный лидер группы.',
+    ranger:'🏹 Дальний бой + магия природы. Хорош в разведке.',
+    druid:'🌿 Превращается в зверей! Уникальный и гибкий класс.',
+    bard:'🎶 Поддерживает всю группу. Мастер общения и хитростей.',
+    monk:'🥋 Быстрый боец без оружия. Требует опыта для раскрытия.',
+    sorcerer:'✨ Меньше заклинаний, но мощнее. Хорош для опытных.',
+    warlock:'👁️ Тёмная магия с быстрым восстановлением. Атмосферный класс.',
+  };
   return `<div class="step-header"><h2>Выбор класса</h2><p>Класс определяет боевые умения и стиль игры</p></div>
-  <div class="card-grid wide">${CLASSES.map(c=>`
+  <div class="tip-box"><span class="tip-icon">💡</span><span><b>Совет новичку:</b> Первая игра? Бери <b>Воина</b> или <b>Варвара</b> — они просты в управлении и выживают даже при ошибках. <b>Жрец</b> тоже отличный выбор если хочешь помогать команде.</span></div>
+  <div class="card-grid wide">${CLASSES.map(c=>{
+    const syn=getSynergy(state.race,c.id);
+    const sl=getSynergyLabel(syn);
+    return `
     <div class="choice-card ${state.cls===c.id?'selected':''}" data-cls="${c.id}" style="position:relative;">
       <div class="card-chk">✓</div>
       ${cardImg(c.img,c.emoji)}
       <div class="card-body">
         <div class="card-name">${c.name}</div>
         <div class="card-desc">${c.tagline}</div>
-        <div class="card-tags">
+        ${state.race?`<div class="synergy-badge" style="color:${sl.color};background:${sl.bg};border:1px solid ${sl.border};">${sl.text}</div>`:''}
+        <div class="card-desc" style="font-size:11px;color:var(--text-muted);margin-top:4px;font-style:italic;">${tips[c.id]||''}</div>
+        <div class="card-tags" style="margin-top:5px;">
           <span class="tag">КД: к${c.hitDie}</span>
           ${c.isMagic?'<span class="tag magic">✦ Магия</span>':''}
         </div>
       </div>
-    </div>`).join('')}
+    </div>`;}).join('')}
   </div>`;
 }
 
 function renderBg(){
   return `<div class="step-header"><h2>Предыстория</h2><p>Кем вы были до приключений — даёт навыки и особое умение</p></div>
+  <div class="tip-box"><span class="tip-icon">💡</span><span><b>Совет новичку:</b> Предыстория — это история твоего персонажа <i>до</i> приключений. Выбирай ту что звучит интереснее для тебя, а не ту которая "сильнее" — механически они примерно равны.</span></div>
   <div class="bg-list">${BACKGROUNDS.map(b=>`
     <div class="bg-card ${state.background===b.id?'selected':''}" data-bg="${b.id}">
       <div class="bg-card-name">${b.name}</div>
@@ -976,6 +1138,11 @@ function renderStats(){
     </div>`;
   }).join('');
   return `<div class="step-header"><h2>Характеристики</h2><p>Метод «Закупка очков» — 27 очков, максимум 15 в одном стате</p></div>
+  <div class="tip-box"><span class="tip-icon">💡</span><span><b>Совет новичку:</b> Вложи очки в характеристики которые важны для твоего класса — подсказки написаны под каждым статом. Не бойся оставить слабые стороны — это делает персонажа интереснее!</span></div>
+  <div style="margin-bottom:.75rem;">
+    <button class="btn btn-secondary" onclick="randomStats()" style="font-size:12px;padding:7px 14px;">🎲 Случайное распределение</button>
+    <span style="font-size:11px;color:var(--text-muted);margin-left:8px;font-family:var(--font-ui);">или распредели очки вручную ниже</span>
+  </div>
   <div class="pointbuy-wrap">
     <div class="pb-points">
       <div><div class="pb-points-val">${left}</div><div class="pb-points-label">очков осталось из 27</div></div>
@@ -991,6 +1158,7 @@ function renderSpells(){
   const sp=SPELLS[state.cls]||{cantrips:[],spells1:[]};
   const maxC=c.cantripsKnown||0, maxS=c.spellsKnown||0;
   let h=`<div class="step-header"><h2>Заклинания</h2><p>Выберите заговоры и заклинания 1 уровня для ${c.name}а</p></div>
+  <div class="tip-box"><span class="tip-icon">💡</span><span><b>Совет новичку:</b> Заговоры используются <b>бесплатно и бесконечно</b>. Заклинания 1 ур. тратят ячейки — они восстанавливаются после долгого отдыха. Бери 1-2 атакующих и 1 вспомогательное заклинание.</span></div>
   <div class="spell-info-bar">
     <span>Заговоры: <strong>${state.selectedCantrips.length} / ${maxC}</strong></span>
     <span>Заклинания 1 ур.: <strong>${state.selectedSpells.length} / ${maxS}</strong></span>
@@ -1081,7 +1249,8 @@ function renderSheet(){
           onerror="this.style.display='none'">
       </div>
       <div class="sheet-hero-info">
-        <div class="sheet-char-name">${r?.name||'—'} ${c?.name||'—'}</div>
+        <div class="sheet-char-name">${state.name||'Безымянный герой'}</div>
+        <div style="font-size:13px;color:#c4a878;margin-bottom:6px;">${r?.name||'—'} ${c?.name||'—'}</div>
         <div class="sheet-meta">
           <div class="sheet-meta-item">Раса: <strong>${r?.name||'—'}</strong></div>
           <div class="sheet-meta-item">Класс: <strong>${c?.name||'—'}</strong></div>
@@ -1090,9 +1259,9 @@ function renderSheet(){
           <div class="sheet-meta-item">Бонус мастерства: <strong>+2</strong></div>
         </div>
         <div class="sheet-vitals">
-          <div class="vital-box"><div class="vital-val hp">${calcHP()}</div><div class="vital-label">Хиты</div></div>
-          <div class="vital-box"><div class="vital-val ac">${calcAC()}</div><div class="vital-label">КД</div></div>
-          <div class="vital-box"><div class="vital-val init">${calcInit()}</div><div class="vital-label">Инициатива</div></div>
+          <div class="vital-box"><div class="vital-val hp">${calcHP()}</div><div class="tooltip-wrap vital-label">Хиты<span class="tt">Урон который ты можешь получить до потери сознания</span></div></div>
+          <div class="vital-box"><div class="vital-val ac">${calcAC()}</div><div class="tooltip-wrap vital-label">КД<span class="tt">Класс Доспеха — чем выше, тем сложнее тебя ударить</span></div></div>
+          <div class="vital-box"><div class="vital-val init">${calcInit()}</div><div class="tooltip-wrap vital-label">Инициатива<span class="tt">Кто ходит первым в бою — бросок к20 + этот бонус</span></div></div>
           <div class="vital-box"><div class="vital-val">${calcSpeed()}</div><div class="vital-label">Скорость фт.</div></div>
           <div class="vital-box"><div class="vital-val">🪙${state.startGold||'—'}</div><div class="vital-label">Золото</div></div>
         </div>
@@ -1160,13 +1329,31 @@ function renderSheet(){
   </div>
   <div style="margin-top:.75rem;display:flex;gap:8px;flex-wrap:wrap;">
     <button class="btn btn-secondary" onclick="state={step:0,race:null,cls:null,background:null,stats:{STR:8,DEX:8,CON:8,INT:8,WIS:8,CHA:8},selectedCantrips:[],selectedSpells:[],selectedWeapons:[],selectedArmor:'none',selectedShield:false,startGold:0};render();">🔄 Создать нового</button>
-    <button class="btn btn-ghost" onclick="window.print()">🖨 Распечатать</button>
+    <button class="btn btn-primary" onclick="showDoneModal()" style="background:var(--gold);border-color:var(--gold);">🎉 Готово!</button>
+  </div>
+  <div style="margin-top:1rem;background:#f0fdf4;border:1px solid #86efac;border-radius:var(--radius-lg);padding:1rem 1.1rem;">
+    <div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:8px;font-family:var(--font-ui);">📖 ПАМЯТКА ДЛЯ ПЕРВОЙ ИГРЫ</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;">
+      <div style="font-size:12px;color:#166534;line-height:1.5;"><b>Атака:</b> к20 + бонус атаки ≥ КД врага — попал!</div>
+      <div style="font-size:12px;color:#166534;line-height:1.5;"><b>Урон:</b> после попадания бросай кость + бонус из листа.</div>
+      <div style="font-size:12px;color:#166534;line-height:1.5;"><b>Спасбросок:</b> к20 + мод. характеристики против угроз.</div>
+      <div style="font-size:12px;color:#166534;line-height:1.5;"><b>Инициатива:</b> к20 + бонус в начале боя — кто выше, тот первый.</div>
+      <div style="font-size:12px;color:#166534;line-height:1.5;"><b>Отдых:</b> короткий (1ч) — часть ХП. Долгий (8ч) — полное восстановление.</div>
+      <div style="font-size:12px;color:#166534;line-height:1.5;"><b>0 ХП:</b> бросаешь к20 — нужно 3 успеха (≥10) прежде чем 3 провала.</div>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:#166534;opacity:.75;">💬 Есть вопросы? Спроси AI-помощника 📖 внизу справа!</div>
   </div>`;
   return h;
 }
 
 // EVENTS
 function bindEvents(id){
+  if(id==='name'){
+    const ni=document.getElementById('nameInput');
+    const rn=document.getElementById('randomNameBtn');
+    if(ni) ni.addEventListener('input',()=>{state.name=ni.value;renderSummary();});
+    if(rn) rn.addEventListener('click',()=>{const n=randomName();state.name=n;if(ni)ni.value=n;renderSummary();});
+  }
   if(id==='race') document.querySelectorAll('[data-race]').forEach(el=>el.addEventListener('click',()=>{state.race=el.dataset.race;state.step=Math.max(state.step,1);render();}));
   if(id==='class') document.querySelectorAll('[data-cls]').forEach(el=>el.addEventListener('click',()=>{state.cls=el.dataset.cls;state.selectedCantrips=[];state.selectedSpells=[];state.selectedWeapons=[];state.selectedArmor='none';state.selectedShield=false;state.step=Math.max(state.step,2);rebuildSteps();render();}));
   if(id==='background') document.querySelectorAll('[data-bg]').forEach(el=>el.addEventListener('click',()=>{state.background=el.dataset.bg;state.step=Math.max(state.step,3);render();}));
@@ -1206,12 +1393,45 @@ function chgStat(k,d){
 
 function goTo(i){if(i<=state.step){state.step=i;render();}}
 
-document.getElementById('btnNext').addEventListener('click',()=>{if(state.step<STEPS.length-1){state.step++;render();}});
+document.getElementById('btnNext').addEventListener('click',()=>{
+  if(state.step<STEPS.length-1){state.step++;render();}
+  else{showDoneModal();}
+});
 document.getElementById('btnBack').addEventListener('click',()=>{if(state.step>0){state.step--;render();}});
 document.getElementById('btnRandom').addEventListener('click',randomize);
 
 if(!state.startGold) rollGold();
 render();
+
+// ===== DONE MODAL =====
+function showDoneModal(){
+  const r=RACES.find(x=>x.id===state.race);
+  const c=CLASSES.find(x=>x.id===state.cls);
+  const name=state.name||'Безымянный герой';
+  
+  let modal=document.getElementById('doneModal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='doneModal';
+    modal.style.cssText='position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:1rem;';
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML=`
+    <div style="background:#fff;border-radius:16px;padding:2rem;max-width:420px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+      <div style="font-size:3rem;margin-bottom:.5rem;">${c?.emoji||'⚔️'}</div>
+      <h2 style="font-size:1.3rem;font-weight:700;color:var(--gold);margin-bottom:.3rem;font-family:var(--font-display);">${name}</h2>
+      <p style="font-size:14px;color:var(--text-secondary);margin-bottom:1.25rem;">${r?.name||''} ${c?.name||''} готов к приключениям!</p>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button onclick="window.print()" style="background:var(--gold);border:none;color:#fff;padding:11px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-ui);">🖨️ Распечатать лист персонажа</button>
+        <button onclick="navigator.clipboard&&navigator.clipboard.writeText(window.location.href).then(()=>alert('Ссылка скопирована!'))" style="background:#f3f4f6;border:1px solid #e5e7eb;color:#374151;padding:11px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font-ui);">🔗 Поделиться ссылкой</button>
+        <button onclick="document.getElementById('doneModal').style.display='none'" style="background:transparent;border:1px solid #e5e7eb;color:#6b7280;padding:9px;border-radius:8px;font-size:13px;cursor:pointer;font-family:var(--font-ui);">Вернуться к листу</button>
+      </div>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:1rem;font-family:var(--font-ui);">Удачи за игровым столом! 🎲</p>
+    </div>
+  `;
+  modal.style.display='flex';
+  modal.addEventListener('click',function(e){if(e.target===modal)modal.style.display='none';});
+}
 
 // ===== AI ASSISTANT =====
 (function(){
