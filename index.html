@@ -256,6 +256,12 @@ html, body { min-height:100vh; background:var(--bg-page); color:var(--text-prima
 
   /* Совместимость */
   .synergy-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:var(--font-ui);padding:2px 7px;border-radius:999px;font-weight:600;margin-top:4px;}
+  .choice-card.syn-great{border-color:#16a34a!important;box-shadow:0 0 0 2px rgba(22,163,74,.2)!important;}
+  .choice-card.syn-good{border-color:#d97706!important;box-shadow:0 0 0 2px rgba(217,119,6,.15)!important;}
+  .choice-card.syn-low{border-color:#9ca3af!important;}
+  .syn-corner{position:absolute;top:0;right:0;width:0;height:0;border-style:solid;border-width:0 28px 28px 0;z-index:3;}
+  .syn-corner.great{border-color:transparent #16a34a transparent transparent;}
+  .syn-corner.good{border-color:transparent #d97706 transparent transparent;}
 
   /* Имя персонажа */
   .name-wrap{background:var(--bg-card);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:1.1rem;max-width:480px;margin-bottom:1.25rem;box-shadow:var(--shadow);}
@@ -790,10 +796,11 @@ let state={step:0,race:null,cls:null,background:null,name:'',stats:{STR:8,DEX:8,
 let STEPS=[];
 
 function rebuildSteps(){
-  const s=[{id:'name',label:'Имя'},{id:'race',label:'Раса'},{id:'class',label:'Класс'},{id:'background',label:'Предыстория'},{id:'stats',label:'Характеристики'}];
+  const s=[{id:'race',label:'Раса'},{id:'class',label:'Класс'},{id:'background',label:'Предыстория'},{id:'stats',label:'Характеристики'}];
   const c=CLASSES.find(x=>x.id===state.cls);
   if(c&&c.isMagic) s.push({id:'spells',label:'Заклинания'});
   s.push({id:'equipment',label:'Снаряжение'});
+  s.push({id:'name',label:'Имя'});
   s.push({id:'sheet',label:'Лист персонажа'});
   STEPS=s;
 }
@@ -999,7 +1006,9 @@ function renderSummary(){
 function renderNav(){
   document.getElementById('btnBack').style.visibility=state.step>0?'visible':'hidden';
   const last=state.step===STEPS.length-1;
-  document.getElementById('btnNext').textContent=last?'✓ Готово':'Далее →';
+  document.getElementById('btnNext').textContent=last?'🖨 Распечатать PDF':'Далее →';
+  if(last) document.getElementById('btnNext').style.cssText='background:var(--gold);border-color:var(--gold);color:#fff;';
+  else document.getElementById('btnNext').style.cssText='';
   document.getElementById('btnNext').disabled=false;
   // Show random button only on first step
   const randomBtn=document.getElementById('btnRandom');
@@ -1078,11 +1087,20 @@ function renderClass(){
   };
   return `<div class="step-header"><h2>Выбор класса</h2><p>Класс определяет боевые умения и стиль игры</p></div>
   <div class="tip-box"><span class="tip-icon">💡</span><span><b>Совет новичку:</b> Первая игра? Бери <b>Воина</b> или <b>Варвара</b> — они просты в управлении и выживают даже при ошибках. <b>Жрец</b> тоже отличный выбор если хочешь помогать команде.</span></div>
+  ${state.race?`<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:.75rem;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);font-size:12px;font-family:var(--font-ui);">
+    <span style="color:var(--text-muted);">Сочетание с ${RACES.find(r=>r.id===state.race)?.name||'расой'}:</span>
+    <span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;border-radius:2px;background:#16a34a;display:inline-block;"></span><span style="color:#166534;font-weight:600;">Отличное</span></span>
+    <span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;border-radius:2px;background:#d97706;display:inline-block;"></span><span style="color:#92400e;font-weight:600;">Хорошее</span></span>
+    <span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;border-radius:2px;background:#9ca3af;display:inline-block;"></span><span style="color:#6b7280;font-weight:600;">Нестандартное</span></span>
+  </div>`:''}
   <div class="card-grid wide">${CLASSES.map(c=>{
     const syn=getSynergy(state.race,c.id);
     const sl=getSynergyLabel(syn);
+    const synCls=state.race?(syn===3?'syn-great':syn===2?'syn-good':'syn-low'):'';
+    const corner=state.race?(syn===3?`<div class="syn-corner great"></div>`:(syn===2?`<div class="syn-corner good"></div>`:'')):'';
     return `
-    <div class="choice-card ${state.cls===c.id?'selected':''}" data-cls="${c.id}" style="position:relative;">
+    <div class="choice-card ${state.cls===c.id?'selected':''} ${synCls}" data-cls="${c.id}" style="position:relative;">
+      ${corner}
       <div class="card-chk">✓</div>
       ${cardImg(c.img,c.emoji)}
       <div class="card-body">
@@ -1117,15 +1135,34 @@ function renderStats(){
   const r=RACES.find(x=>x.id===state.race);
   const left=rem();
   const pct=Math.round((1-left/27)*100);
+  // Priority mapping from class hints
+  const STAT_DESC={
+    STR:'Удары в ближнем бою, Athletics',
+    DEX:'Броски атаки луком, КД лёгкой брони, инициатива',
+    CON:'Хиты и концентрация заклинаний',
+    INT:'Заклинания волшебника, Arcana, History',
+    WIS:'Заклинания жреца/друида, Perception',
+    CHA:'Заклинания барда/колдуна, Persuasion'
+  };
+  const pri1=c?.primaryStats||[];
+  const pri2=c?Object.keys(c.statHints||{}).filter(k=>!pri1.includes(k)&&(c.statHints[k]||'').startsWith('★★★')):[];
   const rows=['STR','DEX','CON','INT','WIS','CHA'].map(k=>{
     const v=state.stats[k];
     const rb=r?.bonuses?.[k]||0;
     const total=v+rb;
-    const hint=c?.statHints?.[k]||'';
     const canDown=v>8;
     const canUp=v<15&&rem()>=((POINT_COST[v+1]||0)-(POINT_COST[v]||0));
-    return `<div class="pb-stat-row">
-      <div class="pb-stat-name">${STAT_NAMES[k]}${hint?`<div class="pb-stat-hint">${hint}</div>`:''}
+    const isPri1=pri1.includes(k);
+    const isPri2=!isPri1&&(c?.statHints?.[k]||'').startsWith('★★');
+    const rowClass=isPri1?'highlight-p1':isPri2?'highlight-p2':'';
+    return `<div class="pb-stat-row ${rowClass}">
+      <div class="pb-stat-name">
+        <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+          <span style="font-weight:700;">${STAT_NAMES[k]}</span>
+          ${isPri1?`<span class="pb-priority p1">★ Главная</span>`:''}
+          ${isPri2?`<span class="pb-priority p2">↑ Важная</span>`:''}
+        </div>
+        <div style="font-size:10px;color:var(--text-muted);font-style:italic;margin-top:1px;">${STAT_DESC[k]}</div>
       </div>
       <button class="pb-btn" onclick="chgStat('${k}',-1)" ${canDown?'':'disabled'}>−</button>
       <div class="pb-val">${v}</div>
@@ -1139,6 +1176,11 @@ function renderStats(){
   }).join('');
   return `<div class="step-header"><h2>Характеристики</h2><p>Метод «Закупка очков» — 27 очков, максимум 15 в одном стате</p></div>
   <div class="tip-box"><span class="tip-icon">💡</span><span><b>Совет новичку:</b> Вложи очки в характеристики которые важны для твоего класса — подсказки написаны под каждым статом. Не бойся оставить слабые стороны — это делает персонажа интереснее!</span></div>
+  ${c?`<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:.75rem;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);font-size:12px;font-family:var(--font-ui);">
+    <span style="color:var(--text-muted);">Для ${c.name}а:</span>
+    <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#f59e0b;display:inline-block;border:1px solid #fcd34d;"></span><span style="color:#92400e;font-weight:600;">★ Главная характеристика</span></span>
+    <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#38bdf8;display:inline-block;border:1px solid #7dd3fc;"></span><span style="color:#075985;font-weight:600;">↑ Важная характеристика</span></span>
+  </div>`:''}
   <div style="margin-bottom:.75rem;">
     <button class="btn btn-secondary" onclick="randomStats()" style="font-size:12px;padding:7px 14px;">🎲 Случайное распределение</button>
     <span style="font-size:11px;color:var(--text-muted);margin-left:8px;font-family:var(--font-ui);">или распредели очки вручную ниже</span>
@@ -1218,10 +1260,16 @@ function renderEquip(){
       <div class="equip-name">Щит</div><div class="equip-stat">+2 к КД</div>
     </div></div></div>`;
   }
-  if(!state.startGold) rollGold();
-  h+=`<div class="gold-roll-box">
-    <div><div class="gold-val" id="goldVal">🪙 ${state.startGold}</div><div class="gold-label">стартовых золотых монет</div></div>
-    <button class="btn btn-secondary" onclick="rollGold();document.getElementById('goldVal').textContent='🪙 '+state.startGold;">🎲 Перебросить</button>
+  // Fixed gold by class
+  const goldByClass={barbarian:40,bard:125,cleric:125,druid:40,fighter:175,monk:12,paladin:175,ranger:125,rogue:100,sorcerer:75,warlock:75,wizard:100};
+  const cls4gold=CLASSES.find(x=>x.id===state.cls);
+  state.startGold=cls4gold?(goldByClass[cls4gold.id]||100):100;
+  h+=`<div class="gold-roll-box" style="background:#fefce8;border:1px solid #fbbf24;border-radius:var(--radius);padding:13px 16px;display:flex;align-items:center;gap:12px;margin-top:1rem;">
+    <div>
+      <div style="font-size:1.5rem;font-weight:700;color:#92400e;">🪙 ${state.startGold} зм</div>
+      <div style="font-size:12px;color:#78350f;font-family:var(--font-ui);">Стартовое золото для ${cls4gold?.name||'персонажа'}</div>
+    </div>
+    <div style="font-size:11px;color:#92400e;font-family:var(--font-ui);line-height:1.5;opacity:.75;">Фиксированная сумма<br>по правилам PHB</div>
   </div>`;
   h+=`<div class="kd-preview">КД: <b style="color:#1d4ed8;">${calcAC()}</b> · ХП: <b style="color:#b91c1c;">${calcHP()}</b> · Инициатива: <b style="color:#166534;">${calcInit()}</b> · Скорость: <b>${calcSpeed()} фт.</b></div>`;
   return h;
@@ -1329,7 +1377,7 @@ function renderSheet(){
   </div>
   <div style="margin-top:.75rem;display:flex;gap:8px;flex-wrap:wrap;">
     <button class="btn btn-secondary" onclick="state={step:0,race:null,cls:null,background:null,stats:{STR:8,DEX:8,CON:8,INT:8,WIS:8,CHA:8},selectedCantrips:[],selectedSpells:[],selectedWeapons:[],selectedArmor:'none',selectedShield:false,startGold:0};render();">🔄 Создать нового</button>
-    <button class="btn btn-primary" onclick="showDoneModal()" style="background:var(--gold);border-color:var(--gold);">🎉 Готово!</button>
+    <button class="btn btn-ghost" onclick="window.print()">🖨 Распечатать PDF</button>
   </div>
   <div style="margin-top:1rem;background:#f0fdf4;border:1px solid #86efac;border-radius:var(--radius-lg);padding:1rem 1.1rem;">
     <div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:8px;font-family:var(--font-ui);">📖 ПАМЯТКА ДЛЯ ПЕРВОЙ ИГРЫ</div>
@@ -1395,7 +1443,7 @@ function goTo(i){if(i<=state.step){state.step=i;render();}}
 
 document.getElementById('btnNext').addEventListener('click',()=>{
   if(state.step<STEPS.length-1){state.step++;render();}
-  else{showDoneModal();}
+  else{window.print();}
 });
 document.getElementById('btnBack').addEventListener('click',()=>{if(state.step>0){state.step--;render();}});
 document.getElementById('btnRandom').addEventListener('click',randomize);
